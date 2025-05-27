@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Paper Airplane Flight Deluxe</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✈️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <script type="application/json" id="package-json-info">
+    {
+      "name": "paper-airplane-flight-deluxe",
+      "version": "1.3.3",
+      "description": "An optimized and mobile-friendly browser-based side-scrolling paper airplane flight game with further increased mobile spacing and performance enhancements.",
+      "main": "index.html",
+      "scripts": {
+        "start": "http-server -c-1"
+      },
+      "keywords": [
+        "game",
+        "html5",
+        "canvas",
+        "javascript",
+        "mobile-friendly",
+        "optimized"
+      ],
+      "author": "Enhanced by AI",
+      "license": "MIT",
+      "devDependencies": {
+        "http-server": "^14.1.1"
+      }
+    }
+    </script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #ffffff;
+            touch-action: manipulation; /* For mobile: prevent pinch-zoom, double-tap-zoom */
+            -webkit-tap-highlight-color: transparent; /* For mobile: remove tap highlight */
+        }
+
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.85); /* Slightly more opaque for better readability */
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .title-container {
+            text-align: center;
+            margin-bottom: 20px; /* Reduced margin */
+        }
+
+        .airplane-icon {
+            font-size: 40px; /* Slightly smaller */
+            margin: 8px 0;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        h1, h2 {
+            color: #ffffff;
+            margin-bottom: 15px; /* Reduced margin */
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        h1 {
+            font-size: 42px; /* Slightly smaller */
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 32px; /* Slightly smaller */
+        }
+
+        .instructions {
+            text-align: center;
+            margin-bottom: 20px; /* Reduced margin */
+            max-width: 90%; /* Ensure it fits small screens */
+            font-size: 14px; /* Adjust for mobile */
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px; /* Reduced gap */
+            margin: 15px 0;
+        }
+
+        .control-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 13px; /* Adjust for mobile */
+        }
+
+        .key {
+            background: #ffffff;
+            color: #000000;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+
+        .glow-button {
+            padding: 12px 25px; /* Slightly smaller padding */
+            font-size: 16px; /* Slightly smaller font */
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s ease; /* Faster transition */
+            position: relative;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .glow-button:hover {
+            transform: scale(1.03); /* Smaller hover scale */
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+        }
+
+        .glow-button:active {
+            transform: scale(0.97); /* Smaller active scale */
+        }
+
+        .powerup-info {
+            margin-top: 20px;
+            text-align: center;
+        }
+         .powerup-info h3 {
+            font-size: 16px; /* Adjust for mobile */
+            margin-bottom: 8px;
+        }
+
+        .powerup-list {
+            display: flex;
+            justify-content: center;
+            gap: 10px; 
+            flex-wrap: wrap; 
+            margin-top: 8px;
+        }
+
+        .powerup-item {
+            display: flex;
+            flex-direction: column; 
+            align-items: center;
+            gap: 4px; 
+            background: rgba(255, 255, 255, 0.08); /* Slightly more subtle */
+            padding: 8px; 
+            border-radius: 5px;
+            min-width: 80px; 
+            font-size: 12px; /* Adjust for mobile */
+        }
+
+        .powerup-icon {
+            width: 25px; /* Smaller */
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 13px; /* Smaller */
+        }
+
+        .powerup-icon.speed { background: #FFD700; }
+        .powerup-icon.shield { background: #4169E1; }
+        .powerup-icon.magnet { background: #FF4500; }
+        .powerup-icon.ghost { background: #A9A9A9; } 
+
+
+        .score-container {
+            display: flex;
+            gap: 20px; /* Reduced gap */
+            margin: 15px 0;
+            font-size: 14px; /* Adjust for mobile */
+        }
+
+        .score-item {
+            text-align: center;
+        }
+
+        .score-value {
+            display: block;
+            font-size: 20px; /* Slightly smaller */
+            font-weight: bold;
+            color: #4CAF50;
+            margin-top: 4px;
+        }
+
+        #gameUI {
+            position: absolute;
+            top: 10px; /* Adjusted for smaller screens */
+            left: 10px;
+            z-index: 5;
+            background: rgba(0, 0, 0, 0.4); /* More subtle */
+            padding: 8px 15px;
+            border-radius: 5px;
+            color: white;
+        }
+
+        #scoreDisplay {
+            font-size: 20px; /* Slightly smaller */
+            font-weight: bold;
+        }
+        #scoreDisplay span:first-child {
+            font-size: 14px; /* Smaller label */
+            opacity: 0.8;
+        }
+
+
+        #powerupDisplay {
+            margin-top: 8px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .active-powerup-icon {
+            width: 36px; /* Smaller */
+            height: 50px; 
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; 
+            font-weight: bold;
+            color: white;
+            border: 1.5px solid white; /* Thinner border */
+            padding: 2px;
+            box-shadow: 0 0 6px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .active-powerup-icon .icon-char {
+            font-size: 18px; 
+            line-height: 1;
+            margin-bottom: 3px;
+        }
+        .powerup-progress-bar-container {
+            width: 90%;
+            height: 5px; /* Thinner */
+            background-color: rgba(0,0,0,0.3);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .powerup-progress-bar {
+            height: 100%;
+            background-color: white;
+            border-radius: 2px;
+            transition: width 0.1s linear, background-color 0.1s ease-in-out;
+        }
+
+
+        #settings {
+            position: absolute;
+            top: 10px; /* Adjusted */
+            right: 10px;
+            display: flex;
+            gap: 8px;
+            z-index: 5;
+        }
+
+        .icon-button {
+            background: rgba(0, 0, 0, 0.4); /* More subtle */
+            border: none;
+            width: 36px; /* Smaller */
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: white;
+        }
+
+        .icon-button:hover {
+            background: rgba(0, 0, 0, 0.6);
+            transform: scale(1.08);
+        }
+
+        .icon {
+            font-size: 18px; /* Smaller */
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px); /* Smaller float */
+            }
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                height: 100vh;
+                border-radius: 0;
+                max-width: 100%;
+            }
+            
+            h1 { font-size: 32px; }
+            h2 { font-size: 26px; }
+            .instructions { font-size: 13px; }
+            .glow-button { padding: 10px 20px; font-size: 15px; }
+
+            .powerup-list { gap: 8px; }
+            .powerup-item { min-width: 70px; padding: 6px; font-size: 11px; }
+            .powerup-icon { width: 22px; height: 22px; font-size: 12px; }
+            
+            .score-container { flex-direction: column; gap: 10px; font-size: 13px; }
+            .score-value { font-size: 18px; }
+
+            #gameUI { top: 8px; left: 8px; padding: 6px 10px; }
+            #scoreDisplay { font-size: 18px; }
+            #scoreDisplay span:first-child { font-size: 12px; }
+
+
+            #settings { top: 8px; right: 8px; }
+            .icon-button { width: 32px; height: 32px; }
+            .icon { font-size: 16px; }
+        }
+         @media (max-height: 450px) { /* Landscape on small height devices */
+            .title-container { margin-bottom: 10px; }
+            h1 { font-size: 28px; margin-bottom: 8px;}
+            .airplane-icon { font-size: 30px; margin: 5px 0;}
+            .instructions { margin-bottom: 10px; font-size: 12px; }
+            .controls { margin: 10px 0; }
+            .glow-button { padding: 8px 15px; font-size: 14px; }
+            .powerup-info { margin-top: 10px; }
+            .powerup-info h3 { font-size: 14px; margin-bottom: 5px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="startScreen" class="screen">
+            <div class="title-container">
+                <h1>Paper Airplane Flight</h1>
+                <div class="airplane-icon">✈️</div>
+            </div>
+            <div class="instructions">
+                <p>Navigate through the buildings and collect powerups!</p>
+                <div class="controls">
+                    <div class="control-item">
+                        <span class="key">SPACE</span>
+                        <span>or</span>
+                        <span class="key">CLICK</span>
+                        <span>to flap</span>
+                    </div>
+                </div>
+            </div>
+            <button id="startButton" class="glow-button">Start Game</button>
+            <div class="powerup-info">
+                <h3>Powerups</h3>
+                <div class="powerup-list">
+                    <div class="powerup-item">
+                        <span class="powerup-icon speed">S</span>
+                        <span>Speed</span>
+                    </div>
+                    <div class="powerup-item">
+                        <span class="powerup-icon shield">SH</span>
+                        <span>Shield</span>
+                    </div>
+                    <div class="powerup-item">
+                        <span class="powerup-icon magnet">M</span>
+                        <span>Magnet</span>
+                    </div>
+                     <div class="powerup-item">
+                        <span class="powerup-icon ghost">G</span>
+                        <span>Ghost</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="gameOverScreen" class="screen hidden">
+            <h2>Game Over</h2>
+            <div class="score-container">
+                <div class="score-item">
+                    <span>Score</span>
+                    <span id="finalScore" class="score-value">0</span>
+                </div>
+                <div class="score-item">
+                    <span>High Score</span>
+                    <span id="highScore" class="score-value">0</span>
+                </div>
+            </div>
+            <button id="restartButton" class="glow-button">Play Again</button>
+        </div>
+
+        <div id="pauseScreen" class="screen hidden">
+            <h2>Paused</h2>
+            <p style="margin: 20px 0; font-size: 18px;">Take a break or admire the view!</p>
+            <button id="resumeButton" class="glow-button">Resume Game</button>
+        </div>
+
+        <div id="gameUI" class="hidden">
+            <div id="scoreDisplay">
+                <span>Score: </span>
+                <span id="currentScore">0</span>
+            </div>
+            <div id="powerupDisplay"></div>
+        </div>
+
+        <div id="settings">
+            <button id="pauseButton" class="icon-button" title="Pause Game">
+                <span class="icon">❚❚</span>
+            </button>
+            <button id="soundToggle" class="icon-button" title="Toggle Sound">
+                <span class="icon">🔊</span>
+            </button>
+            <button id="musicToggle" class="icon-button" title="Toggle Music">
+                <span class="icon">🎵</span>
+            </button>
+        </div>
+    </div>
+    <script>
+        // Game constants
+        const GRAVITY = 0.5;
+        const FLAP_FORCE = -8;
+        const SCROLL_SPEED = 2.8; 
+        const BUILDING_GAP_BASE = 160; // Base for vertical gap
+        const BUILDING_WIDTH = 60;
+        const MAX_TILT = 30; 
+        const PARTICLE_COUNT = 15; 
+        const POWERUP_CHANCE = 0.025; 
+        const MOBILE_WIDTH_THRESHOLD = 600; // Threshold for mobile-specific adjustments
+
+        // Game state
+        let gameState = {
+            isPlaying: false,
+            isPaused: false,
+            pauseStartTime: 0,
+            score: 0,
+            highScore: 0,
+            soundEnabled: true,
+            musicEnabled: true,
+            powerups: [],
+            activePowerups: {}, 
+            particles: [],
+            trailParticles: [],
+            stars: [],
+            dayNightCycle: 0,
+            difficulty: 1, 
+            shieldActive: false,
+            magnetActive: false,
+            ghostActive: false,
+            frameCount: 0,
+            originalDifficultySpeed: null,
+            // Object Pools
+            inactiveParticles: [],
+            inactiveTrailParticles: [],
+            inactiveBuildings: [],
+            inactivePowerups: [],
+        };
+
+        // Game elements
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const pauseScreen = document.getElementById('pauseScreen');
+        const gameUI = document.getElementById('gameUI');
+        const startButton = document.getElementById('startButton');
+        const restartButton = document.getElementById('restartButton');
+        const resumeButton = document.getElementById('resumeButton');
+        const scoreDisplay = document.getElementById('currentScore');
+        const finalScoreDisplay = document.getElementById('finalScore');
+        const highScoreDisplay = document.getElementById('highScore');
+        const soundToggle = document.getElementById('soundToggle');
+        const musicToggle = document.getElementById('musicToggle');
+        const pauseButton = document.getElementById('pauseButton');
+        
+        let airplane = {
+            x: 100, 
+            y: 0,   
+            velocity: 0,
+            rotation: 0,
+            width: 50,  
+            height: 40, 
+            flapAnimation: 0,
+            isFlapping: false
+        };
+
+        let buildings = []; // Active buildings
+        let powerupDisplayElements = {}; // For optimized UI updates
+        
+        // Color Utilities
+        function hexToRgb(hex) {
+            const bigint = parseInt(hex.slice(1), 16);
+            return {
+                r: (bigint >> 16) & 255,
+                g: (bigint >> 8) & 255,
+                b: bigint & 255
+            };
+        }
+
+        function rgbToCssString(rgb, alpha = 1) {
+            if (alpha < 1) {
+                return `rgba(${rgb.r | 0},${rgb.g | 0},${rgb.b | 0},${alpha.toFixed(3)})`;
+            }
+            return `rgb(${rgb.r | 0},${rgb.g | 0},${rgb.b | 0})`;
+        }
+        
+        const COLORS = {
+            NIGHT_SKY_1: hexToRgb("#000030"),
+            NIGHT_SKY_2: hexToRgb("#203050"),
+            DAWN_SKY_1: hexToRgb("#2c3e50"),
+            DAWN_SKY_2: hexToRgb("#34495e"),
+            DAY_SKY_1: hexToRgb("#87CEEB"),
+            DAY_SKY_2: hexToRgb("#ADD8E6"),
+            DUSK_SKY_1: hexToRgb("#e74c3c"),
+            DUSK_SKY_2: hexToRgb("#f39c12"),
+            STAR_COLOR: { r: 255, g: 255, b: 230 }
+        };
+
+        function lerpColorObjects(rgbA, rgbB, amount) {
+            const t = Math.max(0, Math.min(1, amount));
+            return {
+                r: (rgbA.r + t * (rgbB.r - rgbA.r)),
+                g: (rgbA.g + t * (rgbB.g - rgbA.g)),
+                b: (rgbA.b + t * (rgbB.b - rgbA.b))
+            };
+        }
+
+        function shadeColorRgb(rgb, percent) {
+            const factor = 1 + percent / 100;
+            return {
+                r: Math.max(0, Math.min(255, (rgb.r * factor))),
+                g: Math.max(0, Math.min(255, (rgb.g * factor))),
+                b: Math.max(0, Math.min(255, (rgb.b * factor)))
+            };
+        }
+
+
+        function createMockAudio() {
+            return {
+                play: function() { return Promise.resolve(); }, 
+                pause: function() {},
+                load: function() {},
+                loop: false,
+                volume: 1,
+                currentTime: 0,
+            };
+        }
+
+        const sounds = {
+            flap: createMockAudio(),
+            collision: createMockAudio(),
+            score: createMockAudio(),
+            powerup: createMockAudio(),
+            ghostPhase: createMockAudio(),
+            powerupWarning: createMockAudio()
+        };
+        const backgroundMusic = createMockAudio();
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.25;
+        Object.values(sounds).forEach(sound => sound.volume = 0.4);
+
+
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            loadHighScore();
+
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', startGame);
+            resumeButton.addEventListener('click', togglePause);
+            pauseButton.addEventListener('click', togglePause);
+            soundToggle.addEventListener('click', toggleSound);
+            musicToggle.addEventListener('click', toggleMusic);
+
+            document.addEventListener('keydown', handleKeyDown);
+            canvas.addEventListener('click', handleClick);
+            canvas.addEventListener('touchstart', handleTouch, { passive: false });
+            
+            updateSoundButtonIcon();
+            updateMusicButtonIcon();
+            updatePauseButtonIcon();
+
+            Object.values(sounds).forEach(sound => sound.load());
+            backgroundMusic.load();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function resizeCanvas() {
+            const container = document.querySelector('.game-container');
+            canvas.width = container.offsetWidth;
+            canvas.height = container.offsetHeight;
+            if (airplane) {
+                airplane.y = canvas.height / 2;
+            }
+            gameState.stars = []; 
+        }
+
+        function loadHighScore() {
+            const storedHighScore = localStorage.getItem('paperAirplaneHighScoreDeluxeOpt'); 
+            if (storedHighScore) {
+                gameState.highScore = parseInt(storedHighScore, 10);
+            }
+            highScoreDisplay.textContent = gameState.highScore;
+        }
+
+        function saveHighScore() {
+            localStorage.setItem('paperAirplaneHighScoreDeluxeOpt', gameState.highScore.toString());
+        }
+
+        let lastPowerupSpawnAttemptTime = 0;
+        const powerupSpawnCooldown = 800; // ms
+
+        function gameLoop(timestamp) {
+            if (gameState.isPlaying && !gameState.isPaused) {
+                update(timestamp);
+            }
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update(timestamp) {
+            gameState.frameCount++;
+            gameState.dayNightCycle += 0.0005;
+            if (gameState.dayNightCycle > Math.PI * 2) {
+                gameState.dayNightCycle = 0;
+            }
+
+            airplane.velocity += GRAVITY;
+            airplane.y += airplane.velocity;
+            
+            const targetRotation = Math.min(Math.max(airplane.velocity * 2.5, -MAX_TILT), MAX_TILT);
+            airplane.rotation += (targetRotation - airplane.rotation) * 0.1;
+            
+            if (checkCollisions()) {
+                 if (gameState.shieldActive) {
+                    gameState.shieldActive = false;
+                    if (gameState.activePowerups.shield) delete gameState.activePowerups.shield; // Will be handled by deactivate
+                    deactivatePowerup('shield', false); // Ensure UI is also updated correctly
+                    if (gameState.soundEnabled) sounds.collision.play().catch(e => {});
+                    createParticles(airplane.x + airplane.width / 2, airplane.y, getPowerupColor('shield'), 20);
+                } else {
+                    gameOver();
+                    return;
+                }
+            }
+            
+            const currentScrollSpeed = SCROLL_SPEED * gameState.difficulty;
+
+            for (let i = buildings.length - 1; i >= 0; i--) {
+                const building = buildings[i];
+                building.x -= currentScrollSpeed;
+
+                if (building.x + BUILDING_WIDTH < airplane.x && !building.scored) {
+                    gameState.score += 10;
+                    scoreDisplay.textContent = gameState.score;
+                    building.scored = true;
+                    if (gameState.soundEnabled) sounds.score.play().catch(e => {});
+                    
+                    if (gameState.score > 0 && gameState.score % 100 === 0) { // Increase difficulty every 100 points (was 10)
+                        gameState.difficulty = Math.min(gameState.difficulty + 0.05, 2.0); 
+                        createParticles(airplane.x + airplane.width / 2, airplane.y, '#FFD700', 20);
+                    }
+                }
+
+                if (building.x + BUILDING_WIDTH < 0) {
+                    gameState.inactiveBuildings.push(buildings.splice(i, 1)[0]);
+                }
+            }
+            
+            let spawnFactor = 2.2; 
+            if (canvas.width < MOBILE_WIDTH_THRESHOLD) {
+                spawnFactor = 1.3; 
+            }
+            const buildingSpawnDistance = (canvas.width / spawnFactor) + (Math.random() * 70 - 35);
+
+            if (buildings.length === 0 || buildings[buildings.length - 1].x < canvas.width - buildingSpawnDistance) {
+                createBuilding();
+            }
+
+            const now = performance.now();
+            for (const type in gameState.activePowerups) {
+                const pu = gameState.activePowerups[type];
+                const elapsedTime = now - pu.startTime;
+                if (elapsedTime > pu.duration) {
+                    deactivatePowerup(type);
+                }
+            }
+            updatePowerupDisplayUI();
+
+            for (let i = gameState.powerups.length - 1; i >= 0; i--) {
+                const powerup = gameState.powerups[i];
+                powerup.x -= currentScrollSpeed;
+                
+                if (gameState.magnetActive) {
+                    const dx = (airplane.x + airplane.width/2) - (powerup.x + powerup.width/2);
+                    const dy = (airplane.y) - (powerup.y + powerup.height/2); 
+                    const distanceSq = dx * dx + dy * dy;
+                    const magnetRadiusSq = 180 * 180;
+                    if (distanceSq < magnetRadiusSq && distanceSq > 1) {
+                        const distance = Math.sqrt(distanceSq);
+                        powerup.x += dx / distance * (Math.sqrt(magnetRadiusSq) - distance) * 0.04;
+                        powerup.y += dy / distance * (Math.sqrt(magnetRadiusSq) - distance) * 0.04;
+                    }
+                }
+                
+                if (checkPowerupCollision(powerup)) {
+                    applyPowerup(powerup);
+                    gameState.inactivePowerups.push(gameState.powerups.splice(i, 1)[0]);
+                    createParticles(powerup.x + powerup.width / 2, powerup.y + powerup.height / 2, getPowerupColor(powerup.type), 15);
+                } else if (powerup.x + powerup.width < -powerup.visualSize * 2) {
+                    gameState.inactivePowerups.push(gameState.powerups.splice(i, 1)[0]);
+                }
+            }
+            
+            if (timestamp - lastPowerupSpawnAttemptTime > powerupSpawnCooldown) {
+                if (Math.random() < POWERUP_CHANCE) {
+                     createPowerup();
+                }
+                lastPowerupSpawnAttemptTime = timestamp;
+            }
+            
+            for (let i = gameState.particles.length - 1; i >= 0; i--) {
+                const particle = gameState.particles[i];
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.vy += 0.05;
+                particle.life -= 0.025;
+                if (particle.life <= 0) {
+                    gameState.inactiveParticles.push(gameState.particles.splice(i, 1)[0]);
+                }
+            }
+
+            if (gameState.frameCount % 5 === 0) {
+                const planeLength = airplane.width; 
+                const trailEmitterOffset = -planeLength / 2 * 0.8; 
+                const rotatedOffsetX = Math.cos(airplane.rotation * Math.PI / 180) * trailEmitterOffset;
+                const rotatedOffsetY = Math.sin(airplane.rotation * Math.PI / 180) * trailEmitterOffset;
+                const trailX = airplane.x + airplane.width / 2 + rotatedOffsetX;
+                const trailY = airplane.y + rotatedOffsetY;
+                
+                let particle;
+                if (gameState.inactiveTrailParticles.length > 0) {
+                    particle = gameState.inactiveTrailParticles.pop();
+                } else {
+                    particle = {};
+                }
+                particle.x = trailX;
+                particle.y = trailY;
+                particle.vx = (Math.random() - 0.5) * 0.4 - currentScrollSpeed * 0.2;
+                particle.vy = (Math.random() - 0.5) * 1.2;
+                particle.size = Math.random() * 2.0 + 1.0;
+                particle.color = 'rgba(220, 220, 255, 0.35)';
+                particle.life = 0.35 + Math.random() * 0.2;
+                gameState.trailParticles.push(particle);
+            }
+            for (let i = gameState.trailParticles.length - 1; i >= 0; i--) {
+                const particle = gameState.trailParticles[i];
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.vy += 0.01;
+                particle.life -= 0.04;
+                if (particle.life <= 0) {
+                    gameState.inactiveTrailParticles.push(gameState.trailParticles.splice(i, 1)[0]);
+                }
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawBackground();
+            buildings.forEach(drawBuilding);
+            gameState.powerups.forEach(drawPowerup);
+            drawParticles(gameState.trailParticles);
+            
+            if (gameState.shieldActive) {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(65, 105, 225, 0.7)'; 
+                ctx.fillStyle = 'rgba(65, 105, 225, 0.15)';  
+                ctx.lineWidth = 3; 
+                ctx.beginPath();
+                const shieldRadius = (airplane.width + airplane.height) / 2 * 0.55; 
+                ctx.arc((airplane.x + airplane.width / 2) | 0, airplane.y | 0, shieldRadius | 0, 0, Math.PI * 2);
+                ctx.stroke();
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            if (gameState.ghostActive) {
+                ctx.save();
+                ctx.globalAlpha = 0.45 + Math.sin(Date.now()*0.01) * 0.1; 
+            }
+            drawAirplane();
+            if (gameState.ghostActive) {
+                ctx.restore();
+            }
+            drawParticles(gameState.particles);
+        }
+
+        function drawBackground() {
+            const dayNightProgress = (Math.sin(gameState.dayNightCycle) + 1) / 2; 
+            let skyColor1_rgb, skyColor2_rgb;
+            
+            if (dayNightProgress < 0.25) { 
+                const t = dayNightProgress / 0.25;
+                skyColor1_rgb = lerpColorObjects(COLORS.NIGHT_SKY_1, COLORS.DAWN_SKY_1, t); 
+                skyColor2_rgb = lerpColorObjects(COLORS.NIGHT_SKY_2, COLORS.DAWN_SKY_2, t); 
+            } else if (dayNightProgress < 0.5) { 
+                const t = (dayNightProgress - 0.25) / 0.25;
+                skyColor1_rgb = lerpColorObjects(COLORS.DAWN_SKY_1, COLORS.DAY_SKY_1, t); 
+                skyColor2_rgb = lerpColorObjects(COLORS.DAWN_SKY_2, COLORS.DAY_SKY_2, t); 
+            } else if (dayNightProgress < 0.75) { 
+                const t = (dayNightProgress - 0.5) / 0.25;
+                skyColor1_rgb = lerpColorObjects(COLORS.DAY_SKY_1, COLORS.DUSK_SKY_1, t); 
+                skyColor2_rgb = lerpColorObjects(COLORS.DAY_SKY_2, COLORS.DUSK_SKY_2, t); 
+            } else { 
+                const t = (dayNightProgress - 0.75) / 0.25;
+                skyColor1_rgb = lerpColorObjects(COLORS.DUSK_SKY_1, COLORS.NIGHT_SKY_1, t); 
+                skyColor2_rgb = lerpColorObjects(COLORS.DUSK_SKY_2, COLORS.NIGHT_SKY_2, t); 
+            }
+            
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, rgbToCssString(skyColor1_rgb));
+            gradient.addColorStop(0.7, rgbToCssString(skyColor2_rgb)); 
+            gradient.addColorStop(1, rgbToCssString(shadeColorRgb(skyColor2_rgb, -10))); 
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const celestialRadius = (Math.min(canvas.width, canvas.height) * 0.05) | 0;
+            const celestialPathRadius = (Math.min(canvas.width, canvas.height) * 0.30) | 0;
+            const celestialX = (canvas.width / 2 + celestialPathRadius * Math.cos(gameState.dayNightCycle - Math.PI / 2)) | 0;
+            const celestialY = (canvas.height * 0.55 - celestialPathRadius * Math.sin(gameState.dayNightCycle - Math.PI / 2)) | 0;
+            const sunOpacity = Math.max(0, Math.sin(gameState.dayNightCycle));
+
+            if (sunOpacity > 0.05) { 
+                const sunBaseColor = { r: 255, g: 223, b: 100 };
+                const sunGlowRadius = celestialRadius * 2.5;
+                
+                const sunRadialGradient = ctx.createRadialGradient(celestialX, celestialY, celestialRadius * 0.5, celestialX, celestialY, sunGlowRadius);
+                sunRadialGradient.addColorStop(0, rgbToCssString(sunBaseColor, sunOpacity * 0.45));
+                sunRadialGradient.addColorStop(1, rgbToCssString(sunBaseColor, 0));
+                
+                ctx.fillStyle = sunRadialGradient;
+                ctx.fillRect((celestialX - sunGlowRadius) | 0, (celestialY - sunGlowRadius) | 0, (sunGlowRadius * 2) | 0, (sunGlowRadius * 2) | 0);
+
+                ctx.beginPath();
+                ctx.arc(celestialX, celestialY, celestialRadius, 0, Math.PI * 2);
+                ctx.fillStyle = rgbToCssString(sunBaseColor, sunOpacity * 0.9);
+                ctx.fill();
+            }
+
+            const isDarkEnoughForStars = (dayNightProgress < 0.25 || dayNightProgress > 0.75);
+            if (isDarkEnoughForStars) { 
+                if (!gameState.stars || gameState.stars.length === 0 || gameState.stars[0].canvasWidth !== canvas.width) { 
+                    gameState.stars = [];
+                    for (let i = 0; i < 80; i++) {
+                        gameState.stars.push({
+                            x: Math.random() * canvas.width,
+                            y: Math.random() * canvas.height * 0.75, 
+                            radius: Math.random() * 1.0 + 0.3,
+                            alpha: Math.random() * 0.35 + 0.15,
+                            seed: Math.random() * 100, // For twinkling
+                            canvasWidth: canvas.width // To refresh stars on resize
+                        });
+                    }
+                }
+                let overallStarAlphaMultiplier = 0;
+                if (dayNightProgress < 0.25) { overallStarAlphaMultiplier = 1 - (dayNightProgress / 0.25); } 
+                else if (dayNightProgress > 0.75) { overallStarAlphaMultiplier = (dayNightProgress - 0.75) / 0.25; }
+                overallStarAlphaMultiplier = Math.min(1, Math.max(0, overallStarAlphaMultiplier * 1.1));
+
+                gameState.stars.forEach(star => {
+                    const twinkleFactor = 0.65 + Math.sin(gameState.frameCount * 0.025 + star.seed) * 0.35; 
+                    ctx.fillStyle = rgbToCssString(COLORS.STAR_COLOR, star.alpha * overallStarAlphaMultiplier * twinkleFactor);
+                    ctx.beginPath();
+                    ctx.arc(star.x | 0, star.y | 0, star.radius | 0, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+            } else if (gameState.stars.length > 0){ 
+                gameState.stars = []; 
+            }
+        }
+        
+        function drawBuilding(building) {
+            const dayNightProgress = (Math.sin(gameState.dayNightCycle) + 1) / 2;
+            const buildingBrightness = 25 + 45 * dayNightProgress; 
+            const buildingColor = `hsl(${building.hue | 0}, ${building.saturation | 0}%, ${buildingBrightness | 0}%)`;
+            const shadowColor = `hsl(${building.hue | 0}, ${building.saturation | 0}%, ${Math.max(0,buildingBrightness - 18) | 0}%)`;
+
+            const gradient = ctx.createLinearGradient(building.x | 0, 0, (building.x + BUILDING_WIDTH) | 0, 0);
+            gradient.addColorStop(0.2, buildingColor); 
+            gradient.addColorStop(0.8, shadowColor);
+            ctx.fillStyle = gradient;
+
+            ctx.fillRect(building.x | 0, 0, BUILDING_WIDTH | 0, building.topHeight | 0);
+            drawWindows(building.x | 0, 0, BUILDING_WIDTH | 0, building.topHeight | 0, building.windowPattern);
+            
+            ctx.fillRect(building.x | 0, building.bottomY | 0, BUILDING_WIDTH | 0, (canvas.height - building.bottomY) | 0);
+            drawWindows(building.x | 0, building.bottomY | 0, BUILDING_WIDTH | 0, (canvas.height - building.bottomY) | 0, building.windowPattern);
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.12)';
+            ctx.beginPath();
+            ctx.moveTo((building.x + BUILDING_WIDTH) | 0, 0);
+            ctx.lineTo((building.x + BUILDING_WIDTH + 2) | 0, 2); 
+            ctx.lineTo((building.x + BUILDING_WIDTH + 2) | 0, (canvas.height - 2) | 0);
+            ctx.lineTo((building.x + BUILDING_WIDTH) | 0, canvas.height | 0);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        function drawWindows(x, y, width, height, pattern) {
+            const windowSize = 5;
+            const padding = 3; 
+            const numCols = Math.floor((width - padding * 2 + padding) / (windowSize + padding));
+            const numRows = Math.floor((height - padding * 2 + padding) / (windowSize + padding));
+            if (numCols <= 0 || numRows <=0) return;
+
+            const dayNightProgress = (Math.sin(gameState.dayNightCycle) + 1) / 2;
+            const lightIntensity = Math.max(0, 0.75 - dayNightProgress * 1.15); 
+            
+            for (let r = 0; r < numRows; r++) {
+                for (let c = 0; c < numCols; c++) {
+                    const index = r * numCols + c;
+                    if (pattern[index % pattern.length]) { 
+                         const randomBrightness = 0.5 + Math.random()*0.5;
+                         const finalIntensity = lightIntensity * randomBrightness;
+                         if (finalIntensity > 0.08) { 
+                            ctx.fillStyle = `rgba(255, 223, 186, ${finalIntensity.toFixed(2)})`; // Keep toFixed here for string concatenation
+                            ctx.fillRect(
+                                (x + padding + c * (windowSize + padding)) | 0,
+                                (y + padding + r * (windowSize + padding)) | 0,
+                                windowSize | 0,
+                                windowSize | 0
+                            );
+                         }
+                    }
+                }
+            }
+        }
+        
+        function drawAirplane() {
+            ctx.save();
+            ctx.translate((airplane.x + airplane.width / 2) | 0, airplane.y | 0); 
+            ctx.rotate(airplane.rotation * Math.PI / 180);
+
+            if (airplane.isFlapping) {
+                airplane.flapAnimation += 0.45;
+                if (airplane.flapAnimation >= Math.PI) { 
+                    airplane.flapAnimation = 0;
+                    airplane.isFlapping = false;
+                }
+            }
+
+            const planeLength = airplane.width; 
+            const planeBaseSpan = airplane.height * 1.05; 
+            const noseX = (planeLength / 2) | 0;
+            const tailX = (-planeLength / 2) | 0;
+            const flapEffect = (Math.sin(airplane.flapAnimation) * (planeBaseSpan * 0.055)) | 0;
+
+            ctx.fillStyle = '#F0F8FF'; 
+            ctx.strokeStyle = '#B0C4DE'; 
+            ctx.lineWidth = 1.2;
+
+            ctx.beginPath();
+            ctx.moveTo(noseX, 0); 
+            ctx.lineTo(tailX, ((-planeBaseSpan / 2) - flapEffect) | 0); 
+            ctx.lineTo(tailX * 0.9 | 0, 0); 
+            ctx.lineTo(tailX, ((planeBaseSpan / 2) + flapEffect) | 0); 
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(noseX * 0.95 | 0, 0);
+            ctx.lineTo(tailX * 0.9 | 0, 0);
+            ctx.strokeStyle = '#A2B5CD'; 
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+
+            const finHeight = (planeBaseSpan * 0.20) | 0;
+            const finRearX = (tailX * 0.92) | 0; 
+            const finFrontX = (tailX * 0.45) | 0;
+
+            ctx.fillStyle = '#E6F0FA'; 
+            ctx.beginPath();
+            ctx.moveTo(finFrontX, 0); 
+            ctx.lineTo((finFrontX + planeLength * 0.05) | 0, (-finHeight * 0.9) | 0); 
+            ctx.lineTo((finRearX - planeLength * 0.02) | 0, -finHeight);       
+            ctx.lineTo(finRearX, 0);                
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function generateWindowPattern(numWindows) {
+            const pattern = [];
+            const lightOnProb = (Math.random() < 0.5) ? 0.6 : 0.2;
+            for (let i = 0; i < numWindows; i++) {
+                pattern.push(Math.random() < lightOnProb);
+            }
+            return pattern;
+        }
+
+        function createBuilding() {
+            let building;
+            if (gameState.inactiveBuildings.length > 0) {
+                building = gameState.inactiveBuildings.pop();
+            } else {
+                building = {};
+            }
+
+            let mobileGapMultiplier = 1.0; 
+            if (canvas.width < MOBILE_WIDTH_THRESHOLD) {
+                mobileGapMultiplier = 1.25; 
+            }
+
+            const minGap = BUILDING_GAP_BASE * 0.7 * mobileGapMultiplier;
+            const maxGap = BUILDING_GAP_BASE * 1.1 * mobileGapMultiplier; 
+            const difficultyModifier = Math.max(0.55, 1 - (gameState.difficulty - 1) * 0.28); 
+            let currentGapSize = (minGap + Math.random() * (maxGap - minGap)) * difficultyModifier;
+            
+            const gapTopMargin = 60; 
+            const gapBottomMargin = 80; 
+            const minGapHeight = 100 * mobileGapMultiplier; 
+            currentGapSize = Math.max(currentGapSize, minGapHeight);
+
+
+            const gapTop = Math.random() * (canvas.height - currentGapSize - gapTopMargin - gapBottomMargin) + gapTopMargin; 
+
+            building.x = canvas.width;
+            building.topHeight = Math.max(0, gapTop); 
+            building.bottomY = Math.min(canvas.height, gapTop + currentGapSize); 
+            
+            if (building.topHeight < 30) building.topHeight = 30;
+            if (canvas.height - building.bottomY < 30) building.bottomY = canvas.height - 30;
+            if (building.bottomY - building.topHeight < minGapHeight) {
+                 if (canvas.height - building.topHeight - 30 > minGapHeight) {
+                    building.bottomY = building.topHeight + minGapHeight;
+                 } else if (building.bottomY - 30 > minGapHeight) {
+                    building.topHeight = building.bottomY - minGapHeight;
+                 } else { 
+                    building.topHeight = canvas.height / 2 - minGapHeight / 2;
+                    building.bottomY = canvas.height / 2 + minGapHeight / 2;
+                 }
+            }
+
+            building.hue = 180 + Math.random() * 60;
+            building.saturation = 10 + Math.random()*15;
+            building.scored = false;
+            building.windowPattern = generateWindowPattern(30);
+            
+            buildings.push(building);
+        }
+
+        function checkCollisions() {
+            const planeLength = airplane.width * 0.65; 
+            const planeEffectiveHalfSpan = airplane.height * 0.28; 
+
+            const planeCenterX = airplane.x + airplane.width / 2;
+            const planeCenterY = airplane.y;
+
+            const planeLeft = planeCenterX - planeLength / 2;
+            const planeRight = planeCenterX + planeLength / 2;
+            const planeTop = planeCenterY - planeEffectiveHalfSpan;
+            const planeBottom = planeCenterY + planeEffectiveHalfSpan;
+
+            if (planeBottom > canvas.height - 5 || planeTop < 5) {
+                 return true;
+            }
+
+            for (const building of buildings) {
+                if (planeRight > building.x && planeLeft < (building.x + BUILDING_WIDTH)) { 
+                    if (planeTop < building.topHeight || planeBottom > building.bottomY) { 
+                        if (gameState.ghostActive) {
+                            // gameState.ghostActive = false; // Deactivate powerup handles this
+                            deactivatePowerup('ghost', false); 
+                            createParticles(planeCenterX, planeCenterY, getPowerupColor('ghost'), 25);
+                            if (gameState.soundEnabled && sounds.ghostPhase) sounds.ghostPhase.play().catch(e=>{});
+                            building.scored = true; 
+                            return false; 
+                        }
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function handleKeyDown(e) {
+            if (e.code === 'Space') { e.preventDefault(); if (gameState.isPlaying && !gameState.isPaused) flap(); }
+            if (e.code === 'KeyP') { e.preventDefault(); if (gameState.isPlaying) togglePause(); }
+        }
+        function handleClick() { if (gameState.isPlaying && !gameState.isPaused) flap(); }
+        function handleTouch(e) { e.preventDefault(); if (gameState.isPlaying && !gameState.isPaused) flap(); }
+
+        function flap() {
+            airplane.velocity = FLAP_FORCE;
+            airplane.isFlapping = true;
+            airplane.flapAnimation = 0; 
+            if (gameState.soundEnabled) {
+                sounds.flap.currentTime = 0; 
+                sounds.flap.play().catch(e => {});
+            }
+        }
+
+        function startGame() {
+            gameState.isPlaying = true;
+            gameState.isPaused = false;
+            gameState.score = 0;
+            gameState.difficulty = 1;
+            gameState.powerups = [];
+            // gameState.activePowerups = {}; // Reset below
+            gameState.particles = [];
+            gameState.trailParticles = [];
+            // gameState.stars = []; // Reset by resizeCanvas indirectly or drawBackground
+            gameState.shieldActive = false;
+            gameState.magnetActive = false;
+            gameState.ghostActive = false;
+            gameState.frameCount = 0;
+            gameState.originalDifficultySpeed = null;
+            gameState.dayNightCycle = Math.PI * 1.35; 
+
+            // Clear object pools that might hold stale objects from previous game
+            gameState.inactiveParticles.length = 0;
+            gameState.inactiveTrailParticles.length = 0;
+            gameState.inactiveBuildings.length = 0;
+            gameState.inactivePowerups.length = 0;
+            
+            // Properly clear active powerups and their UI
+            Object.keys(gameState.activePowerups).forEach(type => deactivatePowerup(type, false)); // Deactivate without sound
+            gameState.activePowerups = {}; // Ensure it's empty
+            document.getElementById('powerupDisplay').innerHTML = ''; // Clear UI
+            powerupDisplayElements = {}; // Reset UI cache
+
+            scoreDisplay.textContent = '0';
+            finalScoreDisplay.textContent = '0'; 
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+            pauseScreen.classList.add('hidden');
+            gameUI.classList.remove('hidden'); 
+
+            buildings = [];
+            airplane.y = canvas.height / 2;
+            airplane.velocity = 0;
+            airplane.rotation = 0;
+
+            if (gameState.musicEnabled) {
+                backgroundMusic.currentTime = 0;
+                backgroundMusic.play().catch(e => {});
+            }
+            updatePauseButtonIcon();
+            
+            let initialSeparationFactor = 2.1; 
+            if (canvas.width < MOBILE_WIDTH_THRESHOLD) {
+                initialSeparationFactor = 1.1; 
+            }
+
+            for(let i = 0; i < 2; i++) {
+                 createBuilding(); 
+                 if (buildings.length > 0) {
+                    buildings[buildings.length-1].x = canvas.width + i * ((canvas.width / initialSeparationFactor) + (Math.random() * 60 - 30));
+                 }
+            }
+        }
+
+        function gameOver() {
+            gameState.isPlaying = false;
+            if (gameState.soundEnabled) sounds.collision.play().catch(e => {});
+            
+            if (gameState.score > gameState.highScore) {
+                gameState.highScore = gameState.score;
+                saveHighScore();
+            }
+            finalScoreDisplay.textContent = gameState.score;
+            highScoreDisplay.textContent = gameState.highScore;
+            
+            gameOverScreen.classList.remove('hidden');
+            gameUI.classList.add('hidden');
+            if(backgroundMusic) backgroundMusic.pause();
+
+            Object.keys(gameState.activePowerups).forEach(type => deactivatePowerup(type, false));
+            gameState.activePowerups = {}; // Ensure fully cleared
+            
+            document.getElementById('powerupDisplay').innerHTML = '';
+            powerupDisplayElements = {};
+        }
+
+        function togglePause() {
+            if (!gameState.isPlaying) return; 
+            gameState.isPaused = !gameState.isPaused;
+            updatePauseButtonIcon();
+
+            if (gameState.isPaused) {
+                gameState.pauseStartTime = performance.now();
+                if (backgroundMusic) backgroundMusic.pause();
+                pauseScreen.classList.remove('hidden');
+            } else {
+                const pauseDuration = performance.now() - gameState.pauseStartTime;
+                for (const type in gameState.activePowerups) {
+                    gameState.activePowerups[type].startTime += pauseDuration;
+                }
+                if (gameState.musicEnabled) backgroundMusic.play().catch(e => {});
+                pauseScreen.classList.add('hidden');
+            }
+        }
+        
+        function updatePauseButtonIcon() { pauseButton.querySelector('.icon').textContent = gameState.isPaused ? '►' : '❚❚'; }
+        function updateSoundButtonIcon() { soundToggle.querySelector('.icon').textContent = gameState.soundEnabled ? '🔊' : '🔇'; }
+        function updateMusicButtonIcon() { musicToggle.querySelector('.icon').textContent = gameState.musicEnabled ? '🎵' : '🎶';  }
+        function toggleSound() { gameState.soundEnabled = !gameState.soundEnabled; updateSoundButtonIcon(); }
+        function toggleMusic() {
+            gameState.musicEnabled = !gameState.musicEnabled;
+            updateMusicButtonIcon();
+            if (gameState.musicEnabled && gameState.isPlaying && !gameState.isPaused) backgroundMusic.play().catch(e => {});
+            else backgroundMusic.pause();
+        }
+        
+        const POWERUP_TYPES = ['speed', 'shield', 'magnet', 'ghost'];
+        function createPowerup() {
+            if (Object.keys(gameState.activePowerups).length + gameState.powerups.length > 2) return;
+
+            const type = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+            let powerup;
+            if (gameState.inactivePowerups.length > 0) {
+                powerup = gameState.inactivePowerups.pop();
+            } else {
+                powerup = {};
+            }
+            powerup.x = canvas.width + 60; 
+            powerup.y = Math.random() * (canvas.height - 250) + 125; 
+            powerup.type = type;
+            powerup.width = 28; 
+            powerup.height = 28; 
+            powerup.visualSize = 14; 
+            gameState.powerups.push(powerup);
+        }
+
+        function drawPowerup(powerup) {
+            ctx.save();
+            ctx.translate((powerup.x + powerup.width / 2) | 0, (powerup.y + powerup.height / 2) | 0);
+
+            const pulseBase = 8;
+            const pulseRange = 4;
+            const pulse = Math.sin(Date.now() * 0.005) * pulseRange + (pulseBase + pulseRange / 2); 
+            
+            ctx.shadowColor = getPowerupColor(powerup.type);
+            ctx.shadowBlur = pulse | 0;
+
+            ctx.fillStyle = getPowerupColor(powerup.type);
+            ctx.beginPath();
+            ctx.arc(0, 0, powerup.visualSize | 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+            ctx.beginPath();
+            ctx.arc(0, 0, (powerup.visualSize * 0.6) | 0, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.shadowColor = 'transparent';
+            ctx.shadowBlur = 0;
+
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = `bold ${(powerup.visualSize * 0.9) | 0}px Poppins`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            const text = powerup.type === 'shield' ? 'SH' : powerup.type[0].toUpperCase();
+            ctx.fillText(text, 0, 1); 
+            ctx.restore();
+        }
+
+        function createParticles(x, y, color, count = PARTICLE_COUNT, initialVY = (Math.random() - 0.5) * 4.0) {
+            for (let i = 0; i < count; i++) {
+                let particle;
+                if (gameState.inactiveParticles.length > 0) {
+                    particle = gameState.inactiveParticles.pop();
+                } else {
+                    particle = {};
+                }
+                particle.x = x;
+                particle.y = y;
+                particle.vx = (Math.random() - 0.5) * 6.0; 
+                particle.vy = initialVY + (Math.random() - 0.6) * 5.0; 
+                particle.size = Math.random() * 3.2 + 1.5; 
+                particle.color = color;
+                particle.life = 0.65 + Math.random() * 0.45; 
+                gameState.particles.push(particle);
+            }
+        }
+
+        function drawParticles(particleArray) { 
+            particleArray.forEach((particle) => {
+                let alpha;
+                if (particle.life > 0.7) { 
+                    alpha = 1;
+                } else if (particle.life <= 0) {
+                    alpha = 0;
+                } else { 
+                    alpha = particle.life / 0.7;
+                }
+                alpha = Math.max(0, Math.min(1, alpha)); // Clamp
+                
+                if (alpha <= 0) return; // Skip drawing if fully transparent
+
+                ctx.fillStyle = particle.color; // Assume color string already includes alpha or is solid
+                ctx.globalAlpha = alpha; // Set global alpha based on calculated life
+                
+                const size = Math.max(0, particle.size * particle.life); // Size can also diminish
+                if (size > 0.5) {
+                    ctx.fillRect((particle.x - size / 2) | 0, (particle.y - size / 2) | 0, size | 0, size | 0);
+                }
+            });
+            ctx.globalAlpha = 1; 
+        }
+
+        function checkPowerupCollision(powerup) {
+            const planeHitboxRadius = (airplane.width + airplane.height) / 2 * 0.28; 
+            const planeCenterX = airplane.x + airplane.width / 2;
+            const planeCenterY = airplane.y;
+            const powerupCenterX = powerup.x + powerup.width / 2;
+            const powerupCenterY = powerup.y + powerup.height / 2;
+            const dx = planeCenterX - powerupCenterX;
+            const dy = planeCenterY - powerupCenterY;
+            const distanceSq = dx * dx + dy * dy;
+            const collisionRadiusSq = (planeHitboxRadius + powerup.visualSize) * (planeHitboxRadius + powerup.visualSize);
+            return distanceSq < collisionRadiusSq;
+        }
+        
+        function applyPowerup(powerup) {
+            if (gameState.soundEnabled) sounds.powerup.play().catch(e => {});
+
+            if (gameState.activePowerups[powerup.type]) {
+                // Extend duration or re-apply, here we just reset/replace
+                deactivatePowerup(powerup.type, false); 
+            }
+            
+            const durationMap = { speed: 4500, shield: 6500, magnet: 7500, ghost: 4500 };
+            const duration = durationMap[powerup.type];
+
+            gameState.activePowerups[powerup.type] = {
+                startTime: performance.now(),
+                duration: duration,
+                icon: powerup.type === 'shield' ? 'SH' : powerup.type[0].toUpperCase(),
+                color: getPowerupColor(powerup.type)
+            };
+
+            switch (powerup.type) {
+                case 'speed':
+                    if (gameState.originalDifficultySpeed === null) gameState.originalDifficultySpeed = gameState.difficulty;
+                    gameState.difficulty = gameState.originalDifficultySpeed * 1.35;
+                    break;
+                case 'shield': gameState.shieldActive = true; break;
+                case 'magnet': gameState.magnetActive = true; break;
+                case 'ghost': gameState.ghostActive = true; break;
+            }
+        }
+        
+        function deactivatePowerup(type, playSound = true) {
+            if (!gameState.activePowerups[type]) return; 
+            if (playSound && gameState.soundEnabled && sounds.powerupWarning) sounds.powerupWarning.play().catch(e=>{});
+
+            switch (type) {
+                case 'speed':
+                    if (gameState.originalDifficultySpeed !== null) {
+                        gameState.difficulty = gameState.originalDifficultySpeed;
+                        gameState.originalDifficultySpeed = null; 
+                    }
+                    break;
+                case 'shield': gameState.shieldActive = false; break;
+                case 'magnet': gameState.magnetActive = false; break;
+                case 'ghost': gameState.ghostActive = false; break;
+            }
+            delete gameState.activePowerups[type];
+            // UI update will be handled by updatePowerupDisplayUI
+        }
+
+        function updatePowerupDisplayUI() {
+            const display = document.getElementById('powerupDisplay');
+            const now = performance.now();
+            const activeTypesInUI = { ...powerupDisplayElements }; 
+
+            for (const type in gameState.activePowerups) {
+                const pu = gameState.activePowerups[type];
+                const elapsedTime = now - pu.startTime;
+                const remainingTime = pu.duration - elapsedTime;
+
+                if (remainingTime <= 0) { // Should be handled by deactivatePowerup, but good for safety
+                    if (powerupDisplayElements[type]) {
+                        if (powerupDisplayElements[type].parentNode === display) {
+                           display.removeChild(powerupDisplayElements[type]);
+                        }
+                        delete powerupDisplayElements[type];
+                    }
+                    continue;
+                }
+                
+                delete activeTypesInUI[type]; 
+
+                let puElement = powerupDisplayElements[type];
+                if (!puElement) { 
+                    puElement = document.createElement('div');
+                    puElement.className = 'active-powerup-icon';
+                    
+                    const iconText = document.createElement('span');
+                    iconText.className = 'icon-char';
+                    puElement.appendChild(iconText);
+
+                    const progressBarContainer = document.createElement('div');
+                    progressBarContainer.className = 'powerup-progress-bar-container';
+                    const progressBar = document.createElement('div');
+                    progressBar.className = 'powerup-progress-bar';
+                    progressBarContainer.appendChild(progressBar);
+                    puElement.appendChild(progressBarContainer);
+                    
+                    display.appendChild(puElement);
+                    powerupDisplayElements[type] = puElement;
+                }
+
+                const bgColor = pu.color.replace(/0.85\)$/, '0.55)'); // Adjust alpha for background
+                puElement.style.backgroundColor = bgColor;
+                puElement.style.borderColor = pu.color;
+                puElement.querySelector('.icon-char').textContent = pu.icon;
+                
+                const progressBar = puElement.querySelector('.powerup-progress-bar');
+                progressBar.style.width = `${(remainingTime / pu.duration) * 100}%`;
+                
+                if (remainingTime < 1800 && Math.floor(remainingTime / 180) % 2 === 0) {
+                    progressBar.style.backgroundColor = 'red';
+                } else {
+                    progressBar.style.backgroundColor = 'rgba(255,255,255,0.75)';
+                }
+            }
+            
+            for (const typeToRemove in activeTypesInUI) {
+                if (powerupDisplayElements[typeToRemove]) {
+                    if (powerupDisplayElements[typeToRemove].parentNode === display) {
+                        display.removeChild(powerupDisplayElements[typeToRemove]);
+                    }
+                    delete powerupDisplayElements[typeToRemove];
+                }
+            }
+        }
+
+        function getPowerupColor(type) {
+            switch (type) {
+                case 'speed': return 'rgba(255, 215, 0, 0.85)'; 
+                case 'shield': return 'rgba(65, 105, 225, 0.85)'; 
+                case 'magnet': return 'rgba(255, 69, 0, 0.85)'; 
+                case 'ghost': return 'rgba(170, 170, 200, 0.85)'; 
+                default: return 'rgba(255, 255, 255, 0.85)';
+            }
+        }
+
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
