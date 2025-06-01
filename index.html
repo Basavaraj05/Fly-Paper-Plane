@@ -10,8 +10,8 @@
     <script type="application/json" id="package-json-info">
     {
       "name": "paper-airplane-flight-deluxe",
-      "version": "1.4.1",
-      "description": "An optimized and mobile-friendly browser-based side-scrolling paper airplane flight game with diamond-based continue system and mocked rewarded ads. Includes NaN safeguard for plane drawing.",
+      "version": "1.4.2",
+      "description": "An optimized and mobile-friendly browser-based side-scrolling paper airplane flight game with diamond-based continue system and mocked rewarded ads. Includes NaN safeguard for plane drawing and optimized powerup UI.",
       "main": "index.html",
       "scripts": {
         "start": "http-server -c-1"
@@ -288,13 +288,15 @@
             margin-top: 8px;
             display: flex;
             gap: 8px;
+            flex-direction: column; /* Stack powerup icons vertically */
+            align-items: flex-start; /* Align to the left */
         }
 
         .active-powerup-icon {
             width: 36px; /* Smaller */
             height: 50px;
             border-radius: 4px;
-            display: flex;
+            display: flex; /* Will be controlled by JS: none or flex */
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -398,6 +400,9 @@
             #scoreDisplay { font-size: 18px; }
             #scoreDisplay span:first-child { font-size: 12px; }
             #diamondDisplay { font-size: 16px; }
+            #powerupDisplay { gap: 6px; } /* Adjust gap for smaller icons if needed */
+             .active-powerup-icon { width: 32px; height: 45px; } /* Slightly smaller for mobile */
+             .active-powerup-icon .icon-char { font-size: 16px; }
 
 
             #settings { top: 8px; right: 8px; }
@@ -413,6 +418,7 @@
             .glow-button { padding: 8px 15px; font-size: 14px; }
             .powerup-info { margin-top: 10px; }
             .powerup-info h3 { font-size: 14px; margin-bottom: 5px; }
+            #powerupDisplay { flex-direction: row; } /* Horizontal on landscape short screens */
         }
     </style>
 </head>
@@ -521,7 +527,7 @@
         const BUILDING_GAP_BASE = 160; // Base for vertical gap
         const BUILDING_WIDTH = 60;
         const MAX_TILT = 30;
-        const PARTICLE_COUNT = 15;
+        const PARTICLE_COUNT = 10; // OPTIMIZED: Reduced from 15
         const POWERUP_CHANCE = 0.025;
         const MOBILE_WIDTH_THRESHOLD = 600; // Threshold for mobile-specific adjustments
         const CONTINUE_DIAMOND_COST = 1;
@@ -559,11 +565,11 @@
             inactivePowerups: [],
             // Diamond and Continue feature
             diamonds: DEFAULT_DIAMONDS,
-            isContinuing: false, // True during the 3s countdown after choosing to continue
-            continueCountdown: 0, // Seconds remaining for continue countdown
-            continueNextTickTime: 0, // Timestamp for next countdown second
-            continueInvincibilityFrames: 0, // Frames of invincibility after continuing
-            lastCrashedBuilding: null, // To help clear area on continue
+            isContinuing: false, 
+            continueCountdown: 0, 
+            continueNextTickTime: 0, 
+            continueInvincibilityFrames: 0, 
+            lastCrashedBuilding: null, 
         };
 
         // Game elements
@@ -583,13 +589,11 @@
         const musicToggle = document.getElementById('musicToggle');
         const pauseButton = document.getElementById('pauseButton');
 
-        // Diamond and Continue UI
         const diamondDisplay = document.getElementById('currentDiamonds');
         const finalDiamondsDisplay = document.getElementById('finalDiamondsDisplay');
         const continueButton = document.getElementById('continueButton');
         const earnDiamondsButton = document.getElementById('earnDiamondsButton');
         const countdownDisplay = document.getElementById('countdownDisplay');
-
 
         let airplane = {
             x: 100,
@@ -602,8 +606,12 @@
             isFlapping: false
         };
 
-        let buildings = []; // Active buildings
-        let powerupDisplayElements = {}; // For optimized UI updates
+        let buildings = [];
+        
+        // OPTIMIZED: Powerup UI variables
+        let powerupDisplaySlots = [];
+        const MAX_POWERUP_DISPLAY_SLOTS = 3;
+
 
         // Color Utilities
         function hexToRgb(hex) {
@@ -685,6 +693,8 @@
             window.addEventListener('resize', resizeCanvas);
             loadGameData();
 
+            initPowerupUIDisplay(); // OPTIMIZED: Initialize powerup UI slots
+
             startButton.addEventListener('click', startGame);
             restartButton.addEventListener('click', startGame); 
             continueButton.addEventListener('click', handleContinueGame);
@@ -750,7 +760,7 @@
 
         let lastPowerupSpawnAttemptTime = 0;
         const powerupSpawnCooldown = 800; // ms
-        let scoreNeedsDOMUpdate = false; // Performance: Flag for score DOM update
+        let scoreNeedsDOMUpdate = false; 
 
         function gameLoop(timestamp) {
             if (!gameState.isPaused && (gameState.isPlaying || gameState.isContinuing)) {
@@ -809,9 +819,8 @@
             const targetRotation = Math.min(Math.max(airplane.velocity * 2.5, -MAX_TILT), MAX_TILT);
             airplane.rotation += (targetRotation - airplane.rotation) * 0.1;
 
-            // MODIFIED COLLISION HANDLING CALL
             if (checkCollisions()) { 
-                gameOver(); // checkCollisions now returns true only for fatal collisions
+                gameOver();
                 return;
             }
             
@@ -866,7 +875,7 @@
                     deactivatePowerup(type);
                 }
             }
-            updatePowerupDisplayUI();
+            updatePowerupDisplayUI(); // OPTIMIZED: Now uses pre-created slots
 
             for (let i = gameState.powerups.length - 1; i >= 0; i--) {
                 const powerup = gameState.powerups[i];
@@ -917,8 +926,8 @@
             }
             gameState.particles = activeParticles;
 
-
-            if (gameState.frameCount % 5 === 0) {
+            // OPTIMIZED: Reduced trail particle emission frequency
+            if (gameState.frameCount % 8 === 0) { // Was % 5
                 const planeLength = airplane.width;
                 const trailEmitterOffset = -planeLength / 2 * 0.8;
                 const rotatedOffsetX = Math.cos(airplane.rotation * Math.PI / 180) * trailEmitterOffset;
@@ -1055,7 +1064,8 @@
             if (isDarkEnoughForStars) {
                 if (!gameState.stars || gameState.stars.length === 0 || gameState.stars[0].canvasWidth !== canvas.width) {
                     gameState.stars = [];
-                    for (let i = 0; i < 80; i++) {
+                    // OPTIMIZED: Reduced star count
+                    for (let i = 0; i < 60; i++) { // Was 80
                         gameState.stars.push({
                             x: Math.random() * canvas.width,
                             y: Math.random() * canvas.height * 0.75,
@@ -1336,7 +1346,6 @@
             return building; 
         }
 
-        // MODIFIED checkCollisions function
         function checkCollisions() {
             const planeLength = airplane.width * 0.65;
             const planeEffectiveHalfSpan = airplane.height * 0.28;
@@ -1347,69 +1356,52 @@
             const planeTop = planeCenterY - planeEffectiveHalfSpan;
             const planeBottom = planeCenterY + planeEffectiveHalfSpan;
 
-            // Check for collision with canvas top/bottom boundaries
-            // This collision is ALWAYS fatal, regardless of powerups or continue state.
             if (planeBottom > canvas.height - 5 || planeTop < 5) {
-                gameState.lastCrashedBuilding = null; // No specific building involved
-                return true; // Game Over
+                gameState.lastCrashedBuilding = null; 
+                return true; 
             }
 
-            // Check for collision with buildings
             for (const building of buildings) {
-                // Check if plane is horizontally aligned with the building
                 if (planeRight > building.x && planeLeft < (building.x + BUILDING_WIDTH)) {
-                    // Check if plane is vertically colliding with the building parts
                     if (planeTop < building.topHeight || planeBottom > building.bottomY) {
-                        // Collision with a building detected
-
-                        // If invincible from "Continue" feature
                         if (gameState.continueInvincibilityFrames > 0) {
-                            // Score if passing through (if not already scored and fully passed)
                             if (!building.scored && building.x + BUILDING_WIDTH < airplane.x) {
                                 gameState.score += 10;
                                 scoreNeedsDOMUpdate = true;
                                 building.scored = true;
                                 if (gameState.soundEnabled) sounds.score.play().catch(e => {});
                             }
-                            return false; // Pass through building, no game over
+                            return false; 
                         }
 
-                        // If Ghost powerup is active
                         if (gameState.ghostActive) {
-                            deactivatePowerup('ghost', false); // Deactivate ghost powerup
+                            deactivatePowerup('ghost', false); 
                             createParticles(planeCenterX, planeCenterY, getPowerupColor('ghost'), 25);
                             if (gameState.soundEnabled && sounds.ghostPhase) sounds.ghostPhase.play().catch(e=>{});
 
-                            // Score if not already scored and phasing through
                             if (!building.scored) { 
                                 gameState.score += 10;
                                 scoreNeedsDOMUpdate = true;
-                                building.scored = true; // Mark as scored
-                                // Note: sound.score is not played here to avoid sound clutter with ghostPhase
+                                building.scored = true; 
                             }
-                            return false; // Pass through building, no game over
+                            return false; 
                         }
 
-                        // If shield is active
                         if (gameState.shieldActive) {
-                            gameState.shieldActive = false; // Shield is used up
+                            gameState.shieldActive = false; 
                             if (gameState.activePowerups.shield) {
-                                deactivatePowerup('shield', false); // Formally remove from active powerups UI
-                                // No need to delete from activePowerups here again, deactivatePowerup handles it
+                                deactivatePowerup('shield', false); 
                             }
-                            if (gameState.soundEnabled) sounds.collision.play().catch(e => {}); // Collision sound, but shield saves
+                            if (gameState.soundEnabled) sounds.collision.play().catch(e => {}); 
                             createParticles(airplane.x + airplane.width / 2, airplane.y, getPowerupColor('shield'), 20);
-                            // Building is hit, but shield absorbs. Does not score the building.
-                            return false; // Shield absorbed, no game over
+                            return false; 
                         }
-
-                        // Normal collision with building (no invincibility, no ghost, no shield)
                         gameState.lastCrashedBuilding = building;
-                        return true; // Game Over
+                        return true; 
                     }
                 }
             }
-            return false; // No collision with anything
+            return false; 
         }
 
 
@@ -1467,8 +1459,7 @@
 
             Object.keys(gameState.activePowerups).forEach(type => deactivatePowerup(type, false));
             gameState.activePowerups = {};
-            document.getElementById('powerupDisplay').innerHTML = '';
-            powerupDisplayElements = {};
+            // OPTIMIZED: UI slots will be correctly handled by updatePowerupDisplayUI
 
             scoreDisplay.textContent = '0';
             finalScoreDisplay.textContent = '0'; 
@@ -1538,9 +1529,7 @@
 
             Object.keys(gameState.activePowerups).forEach(type => deactivatePowerup(type, false));
             gameState.activePowerups = {};
-
-            document.getElementById('powerupDisplay').innerHTML = '';
-            powerupDisplayElements = {};
+            updatePowerupDisplayUI(); // Ensure UI is cleared
         }
 
         function handleContinueGame() { 
@@ -1839,74 +1828,83 @@
                 case 'ghost': gameState.ghostActive = false; break;
             }
             delete gameState.activePowerups[type];
+            // No direct DOM manipulation here; updatePowerupDisplayUI will handle hiding the slot.
         }
 
+        // OPTIMIZED: Function to initialize powerup display slots
+        function initPowerupUIDisplay() {
+            const displayContainer = document.getElementById('powerupDisplay');
+            displayContainer.innerHTML = ''; // Clear any previous content, e.g. from HMR or errors
+            powerupDisplaySlots = [];
+
+            for (let i = 0; i < MAX_POWERUP_DISPLAY_SLOTS; i++) {
+                const puElement = document.createElement('div');
+                puElement.className = 'active-powerup-icon';
+                puElement.style.display = 'none'; // Initially hidden
+
+                const iconText = document.createElement('span');
+                iconText.className = 'icon-char';
+                puElement.appendChild(iconText);
+
+                const progressBarContainer = document.createElement('div');
+                progressBarContainer.className = 'powerup-progress-bar-container';
+                const progressBar = document.createElement('div');
+                progressBar.className = 'powerup-progress-bar';
+                progressBarContainer.appendChild(progressBar);
+                puElement.appendChild(progressBarContainer);
+
+                displayContainer.appendChild(puElement);
+                powerupDisplaySlots.push({
+                    element: puElement,
+                    iconSpan: iconText,
+                    progressBar: progressBar
+                });
+            }
+        }
+        
+        // OPTIMIZED: Updated function to manage powerup UI display using pre-created slots
         function updatePowerupDisplayUI() { 
-            const display = document.getElementById('powerupDisplay');
             const now = performance.now();
-            const activeTypesInUI = { ...powerupDisplayElements };
+            let currentSlotIndex = 0;
 
             for (const type in gameState.activePowerups) {
+                if (currentSlotIndex >= MAX_POWERUP_DISPLAY_SLOTS) {
+                    break; 
+                }
+
                 const pu = gameState.activePowerups[type];
                 const elapsedTime = now - pu.startTime;
                 const remainingTime = pu.duration - elapsedTime;
 
                 if (remainingTime <= 0) {
-                    if (powerupDisplayElements[type]) {
-                        if (powerupDisplayElements[type].parentNode === display) {
-                           display.removeChild(powerupDisplayElements[type]);
-                        }
-                        delete powerupDisplayElements[type];
-                    }
-                    continue;
+                    continue; 
                 }
 
-                delete activeTypesInUI[type];
-
-                let puElement = powerupDisplayElements[type];
-                if (!puElement) {
-                    puElement = document.createElement('div');
-                    puElement.className = 'active-powerup-icon';
-
-                    const iconText = document.createElement('span');
-                    iconText.className = 'icon-char';
-                    puElement.appendChild(iconText);
-
-                    const progressBarContainer = document.createElement('div');
-                    progressBarContainer.className = 'powerup-progress-bar-container';
-                    const progressBar = document.createElement('div');
-                    progressBar.className = 'powerup-progress-bar';
-                    progressBarContainer.appendChild(progressBar);
-                    puElement.appendChild(progressBarContainer);
-
-                    display.appendChild(puElement);
-                    powerupDisplayElements[type] = puElement;
-                }
+                const slot = powerupDisplaySlots[currentSlotIndex];
+                
+                slot.element.style.display = 'flex';
 
                 const bgColor = pu.color.replace(/0.85\)$/, '0.55)');
-                puElement.style.backgroundColor = bgColor;
-                puElement.style.borderColor = pu.color;
-                puElement.querySelector('.icon-char').textContent = pu.icon;
+                slot.element.style.backgroundColor = bgColor;
+                slot.element.style.borderColor = pu.color;
+                slot.iconSpan.textContent = pu.icon;
 
-                const progressBar = puElement.querySelector('.powerup-progress-bar');
-                progressBar.style.width = `${(remainingTime / pu.duration) * 100}%`;
+                slot.progressBar.style.width = `${(remainingTime / pu.duration) * 100}%`;
 
                 if (remainingTime < 1800 && Math.floor(remainingTime / 180) % 2 === 0) {
-                    progressBar.style.backgroundColor = 'red';
+                    slot.progressBar.style.backgroundColor = 'red';
                 } else {
-                    progressBar.style.backgroundColor = 'rgba(255,255,255,0.75)';
+                    slot.progressBar.style.backgroundColor = 'rgba(255,255,255,0.75)';
                 }
+                
+                currentSlotIndex++;
             }
 
-            for (const typeToRemove in activeTypesInUI) {
-                if (powerupDisplayElements[typeToRemove]) {
-                    if (powerupDisplayElements[typeToRemove].parentNode === display) {
-                        display.removeChild(powerupDisplayElements[typeToRemove]);
-                    }
-                    delete powerupDisplayElements[typeToRemove];
-                }
+            for (let i = currentSlotIndex; i < MAX_POWERUP_DISPLAY_SLOTS; i++) {
+                powerupDisplaySlots[i].element.style.display = 'none';
             }
         }
+
 
         function getPowerupColor(type) { 
             switch (type) {
