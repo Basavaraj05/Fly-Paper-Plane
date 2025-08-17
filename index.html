@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,8 +11,8 @@
     <script type="application/json" id="package-json-info">
     {
       "name": "paper-airplane-flight-deluxe",
-      "version": "1.4.2",
-      "description": "An optimized and mobile-friendly browser-based side-scrolling paper airplane flight game with diamond-based continue system and mocked rewarded ads. Includes NaN safeguard for plane drawing and optimized powerup UI.",
+      "version": "1.7.0",
+      "description": "An optimized and mobile-friendly browser-based side-scrolling paper airplane flight game with a user-configurable speed system (locked or auto-increasing) and other deluxe features.",
       "main": "index.html",
       "scripts": {
         "start": "http-server -c-1"
@@ -24,7 +25,10 @@
         "mobile-friendly",
         "optimized",
         "diamonds",
-        "continue"
+        "continue",
+        "fixed-timestep",
+        "settings",
+        "speed-control"
       ],
       "author": "Enhanced by AI",
       "license": "MIT",
@@ -33,7 +37,8 @@
       }
     }
     </script>
-
+    
+    
     <style>
         * {
             margin: 0;
@@ -43,15 +48,15 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background-color: #1a1a1a;
+            background-color: #0D1117; /* New: Deep navy blue background */
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             overflow: hidden;
-            color: #ffffff;
-            touch-action: manipulation; /* For mobile: prevent pinch-zoom, double-tap-zoom */
-            -webkit-tap-highlight-color: transparent; /* For mobile: remove tap highlight */
+            color: #C9D1D9; /* New: Soft off-white text */
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .game-container {
@@ -60,9 +65,10 @@
             max-width: 800px;
             height: 600px;
             margin: 0 auto;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 0 30px rgba(0, 245, 212, 0.1); /* New: Subtle cyan glow */
             border-radius: 10px;
             overflow: hidden;
+            border: 1px solid rgba(201, 209, 217, 0.1); /* New: Faint border */
         }
 
         #gameCanvas {
@@ -83,7 +89,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background-color: rgba(0, 0, 0, 0.85); /* Slightly more opaque for better readability */
+            background-color: rgba(13, 17, 23, 0.9); /* New: Dark, semi-transparent overlay */
             z-index: 10;
             padding: 20px;
             text-align: center;
@@ -95,42 +101,42 @@
 
         .title-container {
             text-align: center;
-            margin-bottom: 20px; /* Reduced margin */
+            margin-bottom: 20px;
         }
 
         .airplane-icon {
-            font-size: 40px; /* Slightly smaller */
+            font-size: 40px;
             margin: 8px 0;
             animation: float 3s ease-in-out infinite;
         }
 
         h1, h2 {
             color: #ffffff;
-            margin-bottom: 15px; /* Reduced margin */
+            margin-bottom: 15px;
             text-align: center;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            text-shadow: 0 0 15px rgba(0, 245, 212, 0.4); /* New: Cyan text shadow */
         }
 
         h1 {
-            font-size: 42px; /* Slightly smaller */
+            font-size: 42px;
             font-weight: 700;
         }
 
         h2 {
-            font-size: 32px; /* Slightly smaller */
+            font-size: 32px;
         }
 
         .instructions {
             text-align: center;
-            margin-bottom: 20px; /* Reduced margin */
-            max-width: 90%; /* Ensure it fits small screens */
-            font-size: 14px; /* Adjust for mobile */
+            margin-bottom: 20px;
+            max-width: 90%;
+            font-size: 14px;
         }
 
         .controls {
             display: flex;
             justify-content: center;
-            gap: 15px; /* Reduced gap */
+            gap: 15px;
             margin: 15px 0;
         }
 
@@ -138,46 +144,49 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(201, 209, 217, 0.1);
             padding: 8px 15px;
             border-radius: 5px;
-            font-size: 13px; /* Adjust for mobile */
+            font-size: 13px;
         }
 
         .key {
             background: #ffffff;
-            color: #000000;
+            color: #0D1117;
             padding: 4px 8px;
             border-radius: 3px;
             font-weight: bold;
         }
 
         .glow-button {
-            padding: 12px 25px; /* Slightly smaller padding */
-            font-size: 16px; /* Slightly smaller font */
-            background: linear-gradient(45deg, #4CAF50, #45a049);
-            color: white;
+            padding: 12px 25px;
+            font-size: 16px;
+            background: linear-gradient(45deg, #00F5D4, #00A8FF); /* New: Cyan to Blue gradient */
+            color: #0D1117; /* New: Dark text on buttons */
+            font-weight: 600;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            transition: all 0.2s ease; /* Faster transition */
+            transition: all 0.2s ease;
             position: relative;
             overflow: hidden;
             margin-top: 8px;
         }
-        #gameOverScreen .glow-button, #pauseScreen .glow-button { margin-top: 10px; }
+        #pauseScreen .glow-button { margin-top: 10px; }
+        #settingsScreen .glow-button { margin-top: 25px; }
 
 
         .glow-button:hover {
-            transform: scale(1.03); /* Smaller hover scale */
-            box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 245, 212, 0.5); /* New: Cyan hover shadow */
         }
 
         .glow-button:active {
-            transform: scale(0.97); /* Smaller active scale */
+            transform: scale(0.97);
         }
         .glow-button:disabled {
-            background: #555;
+            background: #30363d; /* New: Darker disabled state */
+            color: #8b949e;
             cursor: not-allowed;
             transform: scale(1);
             box-shadow: none;
@@ -189,7 +198,7 @@
             text-align: center;
         }
          .powerup-info h3 {
-            font-size: 16px; /* Adjust for mobile */
+            font-size: 16px;
             margin-bottom: 8px;
         }
 
@@ -206,36 +215,37 @@
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            background: rgba(255, 255, 255, 0.08); /* Slightly more subtle */
+            background: rgba(201, 209, 217, 0.08);
             padding: 8px;
             border-radius: 5px;
             min-width: 80px;
-            font-size: 12px; /* Adjust for mobile */
+            font-size: 12px;
         }
 
         .powerup-icon {
-            width: 25px; /* Smaller */
+            width: 25px;
             height: 25px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            color: white;
-            font-size: 13px; /* Smaller */
+            color: #0D1117;
+            font-size: 13px;
         }
 
+        /* New Powerup Colors */
         .powerup-icon.speed { background: #FFD700; }
-        .powerup-icon.shield { background: #4169E1; }
-        .powerup-icon.magnet { background: #FF4500; }
-        .powerup-icon.ghost { background: #A9A9A9; }
+        .powerup-icon.shield { background: #007BFF; }
+        .powerup-icon.magnet { background: #FF0095; }
+        .powerup-icon.ghost { background: #BDBDBD; }
 
 
         .score-container {
             display: flex;
-            gap: 20px; /* Reduced gap */
+            gap: 20px;
             margin: 15px 0;
-            font-size: 14px; /* Adjust for mobile */
+            font-size: 14px;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -247,29 +257,29 @@
 
         .score-value {
             display: block;
-            font-size: 20px; /* Slightly smaller */
+            font-size: 20px;
             font-weight: bold;
-            color: #4CAF50;
+            color: #00F5D4; /* New: Cyan score color */
             margin-top: 4px;
         }
 
         #gameUI {
             position: absolute;
-            top: 10px; /* Adjusted for smaller screens */
+            top: 10px;
             left: 10px;
             z-index: 5;
-            background: rgba(0, 0, 0, 0.4); /* More subtle */
+            background: rgba(13, 17, 23, 0.5); /* New: UI background */
             padding: 8px 15px;
-            border-radius: 5px;
-            color: white;
+            border-radius: 8px;
+            color: #C9D1D9;
         }
 
         #scoreDisplay {
-            font-size: 20px; /* Slightly smaller */
+            font-size: 20px;
             font-weight: bold;
         }
         #scoreDisplay span:first-child {
-            font-size: 14px; /* Smaller label */
+            font-size: 14px;
             opacity: 0.8;
         }
         
@@ -278,9 +288,19 @@
             font-weight: bold;
             margin-top: 5px;
         }
-        #diamondDisplay span:first-child { /* Emoji styling */
+        #diamondDisplay span:first-child {
             font-size: 16px;
             margin-right: 3px;
+        }
+        
+        #speedDisplay {
+            font-size: 16px; 
+            font-weight: bold;
+            margin-top: 5px;
+        }
+        #speedDisplay span:first-child {
+            font-size: 14px;
+            opacity: 0.8;
         }
 
 
@@ -288,23 +308,23 @@
             margin-top: 8px;
             display: flex;
             gap: 8px;
-            flex-direction: column; /* Stack powerup icons vertically */
-            align-items: flex-start; /* Align to the left */
+            flex-direction: column;
+            align-items: flex-start;
         }
 
         .active-powerup-icon {
-            width: 36px; /* Smaller */
+            width: 36px;
             height: 50px;
-            border-radius: 4px;
-            display: flex; /* Will be controlled by JS: none or flex */
+            border-radius: 6px; /* New: Slightly more rounded */
+            display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: bold;
             color: white;
-            border: 1.5px solid white; /* Thinner border */
+            border: 1.5px solid white;
             padding: 2px;
-            box-shadow: 0 0 6px rgba(0,0,0,0.3);
+            box-shadow: 0 0 8px rgba(0,0,0,0.4);
             position: relative;
         }
         .active-powerup-icon .icon-char {
@@ -314,8 +334,8 @@
         }
         .powerup-progress-bar-container {
             width: 90%;
-            height: 5px; /* Thinner */
-            background-color: rgba(0,0,0,0.3);
+            height: 5px;
+            background-color: rgba(0,0,0,0.4);
             border-radius: 2px;
             overflow: hidden;
         }
@@ -329,7 +349,7 @@
 
         #settings {
             position: absolute;
-            top: 10px; /* Adjusted */
+            top: 10px;
             right: 10px;
             display: flex;
             gap: 8px;
@@ -337,9 +357,9 @@
         }
 
         .icon-button {
-            background: rgba(0, 0, 0, 0.4); /* More subtle */
-            border: none;
-            width: 36px; /* Smaller */
+            background: rgba(13, 17, 23, 0.5); /* New: UI background */
+            border: 1px solid rgba(201, 209, 217, 0.1);
+            width: 36px;
             height: 36px;
             border-radius: 50%;
             display: flex;
@@ -347,24 +367,74 @@
             justify-content: center;
             cursor: pointer;
             transition: all 0.2s ease;
-            color: white;
+            color: #C9D1D9;
         }
 
         .icon-button:hover {
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(13, 17, 23, 0.8);
             transform: scale(1.08);
+            border-color: #00F5D4; /* New: Cyan border on hover */
         }
 
         .icon {
-            font-size: 18px; /* Smaller */
+            font-size: 18px;
         }
         
         #countdownDisplay {
-            z-index: 20; /* Above gameUI */
+            z-index: 20;
             font-size: 80px;
             color: white;
-            text-shadow: 2px 2px 4px black, 0 0 15px white;
-            background-color: rgba(0,0,0,0.5);
+            text-shadow: 2px 2px 4px black, 0 0 20px #00F5D4; /* New: Cyan text shadow */
+            background-color: rgba(13, 17, 23, 0.5);
+        }
+
+        /* Settings Screen Styles */
+        .setting-item {
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            max-width: 300px;
+        }
+        .setting-item label {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        #speedValueDisplay {
+            color: #00F5D4; /* New: Cyan highlight */
+            font-weight: 700;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            background: rgba(201, 209, 217, 0.2);
+            border-radius: 5px;
+            outline: none;
+            transition: opacity 0.2s;
+        }
+        input[type="range"]:disabled {
+            opacity: 0.4;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #00F5D4; /* New: Cyan thumb */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #00F5D4; /* New: Cyan thumb */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
         }
 
 
@@ -373,14 +443,80 @@
                 transform: translateY(0);
             }
             50% {
-                transform: translateY(-8px); /* Smaller float */
+                transform: translateY(-8px);
             }
         }
+
+        @keyframes pop-in {
+            from {
+                transform: scale(0.95);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .ui-card {
+            background: rgba(22, 27, 34, 0.95); /* New: Card background */
+            padding: 25px 35px;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(201, 209, 217, 0.1);
+            width: 90%;
+            max-width: 450px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            transform: scale(0.95);
+            opacity: 0;
+            animation: pop-in 0.4s 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        #gameOverScreen .ui-card h2,
+        #pauseScreen .ui-card h2,
+        #settingsScreen .ui-card h2 {
+            margin-bottom: 5px;
+        }
+        
+        #pauseScreen .ui-card p {
+            margin: 0;
+            font-size: 16px;
+        }
+
+
+        #gameOverScreen .score-container {
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            width: 100%;
+            margin: 5px 0 10px 0;
+        }
+        
+        #gameOverScreen .score-item {
+             min-width: 80px;
+        }
+
+        #gameOverScreen .button-group {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            gap: 10px;
+            align-items: stretch;
+        }
+        
+        #gameOverScreen .glow-button {
+            margin-top: 0;
+        }
+
 
         @media (max-width: 600px) {
             .game-container {
                 height: 100vh;
                 border-radius: 0;
+                border: none;
                 max-width: 100%;
             }
 
@@ -393,15 +529,17 @@
             .powerup-item { min-width: 70px; padding: 6px; font-size: 11px; }
             .powerup-icon { width: 22px; height: 22px; font-size: 12px; }
 
-            .score-container { flex-direction: column; gap: 10px; font-size: 13px; }
+            #startScreen .score-container { flex-direction: column; gap: 10px; font-size: 13px; }
             .score-value { font-size: 18px; }
 
             #gameUI { top: 8px; left: 8px; padding: 6px 10px; }
             #scoreDisplay { font-size: 18px; }
             #scoreDisplay span:first-child { font-size: 12px; }
             #diamondDisplay { font-size: 16px; }
-            #powerupDisplay { gap: 6px; } /* Adjust gap for smaller icons if needed */
-             .active-powerup-icon { width: 32px; height: 45px; } /* Slightly smaller for mobile */
+            #speedDisplay { font-size: 14px; }
+            #speedDisplay span:first-child { font-size: 11px; }
+            #powerupDisplay { gap: 6px; }
+             .active-powerup-icon { width: 32px; height: 45px; }
              .active-powerup-icon .icon-char { font-size: 16px; }
 
 
@@ -418,7 +556,7 @@
             .glow-button { padding: 8px 15px; font-size: 14px; }
             .powerup-info { margin-top: 10px; }
             .powerup-info h3 { font-size: 14px; margin-bottom: 5px; }
-            #powerupDisplay { flex-direction: row; } /* Horizontal on landscape short screens */
+            #powerupDisplay { flex-direction: row; }
         }
     </style>
 </head>
@@ -467,30 +605,49 @@
         </div>
 
         <div id="gameOverScreen" class="screen hidden">
-            <h2>Game Over</h2>
-            <div class="score-container">
-                <div class="score-item">
-                    <span>Score</span>
-                    <span id="finalScore" class="score-value">0</span>
+            <div class="ui-card">
+                <h2>Game Over</h2>
+                <div class="score-container">
+                    <div class="score-item">
+                        <span>Score</span>
+                        <span id="finalScore" class="score-value">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>High Score</span>
+                        <span id="highScore" class="score-value">0</span>
+                    </div>
+                    <div class="score-item">
+                        <span>Diamonds</span>
+                        <span id="finalDiamondsDisplay" class="score-value">0</span>
+                    </div>
                 </div>
-                <div class="score-item">
-                    <span>High Score</span>
-                    <span id="highScore" class="score-value">0</span>
-                </div>
-                <div class="score-item">
-                    <span>Diamonds</span>
-                    <span id="finalDiamondsDisplay" class="score-value">0</span>
+                <div class="button-group">
+                    <button id="continueButton" class="glow-button hidden">Continue (💎1)</button>
+                    <button id="earnDiamondsButton" class="glow-button hidden">Earn 💎 (Watch Ad)</button>
+                    <button id="restartButton" class="glow-button">Play Again</button>
                 </div>
             </div>
-            <button id="continueButton" class="glow-button hidden">Continue (💎1)</button>
-            <button id="earnDiamondsButton" class="glow-button hidden">Earn 💎 (Watch Ad)</button>
-            <button id="restartButton" class="glow-button">Play Again</button>
         </div>
 
         <div id="pauseScreen" class="screen hidden">
-            <h2>Paused</h2>
-            <p style="margin: 20px 0; font-size: 18px;">Take a break or admire the view!</p>
-            <button id="resumeButton" class="glow-button">Resume Game</button>
+             <div class="ui-card">
+                <h2>Paused</h2>
+                <p>Take a break or admire the view!</p>
+                <button id="resumeButton" class="glow-button">Resume Game</button>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settingsScreen" class="screen hidden">
+            <div class="ui-card">
+                <h2>Settings</h2>
+                <div class="setting-item">
+                    <label for="speedSlider">Game Speed: <span id="speedValueDisplay">Auto</span></label>
+                    <input type="range" id="speedSlider" min="1" max="2" step="0.1" value="1.0">
+                    <button id="toggleAutoSpeedButton" class="glow-button" style="margin-top: 15px; font-size: 14px; padding: 10px 20px;">Enable Auto Speed</button>
+                </div>
+                <button id="closeSettingsButton" class="glow-button">Done</button>
+            </div>
         </div>
         
         <div id="countdownDisplay" class="screen hidden">3</div>
@@ -504,48 +661,78 @@
             <div id="diamondDisplay">
                 <span>💎 </span><span id="currentDiamonds">0</span>
             </div>
+            <div id="speedDisplay">
+                <span>Speed: </span>
+                <span id="currentSpeed">1.0x</span>
+            </div>
             <div id="powerupDisplay"></div>
         </div>
 
         <div id="settings">
+            <button id="settingsButton" class="icon-button" title="Settings">
+                <span class="icon">⚙️</span>
+            </button>
             <button id="pauseButton" class="icon-button" title="Pause Game">
                 <span class="icon">❚❚</span>
             </button>
             <button id="soundToggle" class="icon-button" title="Toggle Sound">
                 <span class="icon">🔊</span>
             </button>
-            <button id="musicToggle" class="icon-button" title="Toggle Music">
-                <span class="icon">🎵</span>
-            </button>
+        </div>
+        
+        <div id="performanceMonitor" style="position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 10px; font-family: monospace; display: none; z-index: 100;">
+            <div>FPS: <span id="fpsDisplay">60</span></div>
+            <div>Device: <span id="deviceDisplay">high</span></div>
+            <div>Particles: <span id="particleDisplay">0</span></div>
+            <div>Buildings: <span id="buildingDisplay">0</span></div>
         </div>
     </div>
     <script>
-        // Game constants
-        const GRAVITY = 0.5;
-        const FLAP_FORCE = -8;
-        const SCROLL_SPEED = 2.8;
-        const BUILDING_GAP_BASE = 160; // Base for vertical gap
-        const BUILDING_WIDTH = 60;
-        const MAX_TILT = 30;
-        const PARTICLE_COUNT = 10; // OPTIMIZED: Reduced from 15
-        const POWERUP_CHANCE = 0.025;
-        const MOBILE_WIDTH_THRESHOLD = 600; // Threshold for mobile-specific adjustments
-        const CONTINUE_DIAMOND_COST = 1;
-        const EARN_DIAMONDS_REWARD = 5;
-        const DEFAULT_DIAMONDS = 5;
-        const CONTINUE_INVINCIBILITY_DURATION_FRAMES = 180; // 3 seconds at 60fps
+        // Performance and device detection
+        let devicePerformance = 'high'; // 'low', 'mid', 'high'
+        let targetFPS = 60;
+        let lastFrameTime = 0;
+        let fpsHistory = [];
+        let performanceMonitor = {
+            fps: 60,
+            frameTime: 16.67,
+            particleCount: 0,
+            buildingCount: 0,
+            powerupCount: 0
+        };
+
+        // Adaptive game constants
+        let GRAVITY = 0.5;
+        let FLAP_FORCE = -8;
+        let initialBaseSpeed = 2.8; 
+        let BASE_SCROLL_SPEED = 2.8; 
+        let SCROLL_SPEED = 2.8;
+        let MAX_AUTO_SCROLL_MULTIPLIER = 2.0; // The max speed multiplier in auto mode
+        let SPEED_INCREASE_RATE = 0.02;
+        let SPEED_INCREASE_INTERVAL = 300;
+        let BUILDING_GAP_BASE = 160;
+        let BUILDING_WIDTH = 60;
+        let MAX_TILT = 30;
+        let PARTICLE_COUNT = 10;
+        let POWERUP_CHANCE = 0.025;
+        let MOBILE_WIDTH_THRESHOLD = 600;
+        let CONTINUE_DIAMOND_COST = 1;
+        let EARN_DIAMONDS_REWARD = 5;
+        let DEFAULT_DIAMONDS = 5;
+        let CONTINUE_INVINCIBILITY_DURATION_FRAMES = 180;
 
 
         // Game state
         let gameState = {
             isPlaying: false,
             isPaused: false,
+            isSettingsOpen: false, 
+            wasPausedBeforeSettings: false,
             isWaitingForFirstFlap: false,
             pauseStartTime: 0,
             score: 0,
             highScore: 0,
             soundEnabled: true,
-            musicEnabled: true,
             powerups: [],
             activePowerups: {},
             particles: [],
@@ -570,6 +757,16 @@
             continueNextTickTime: 0, 
             continueInvincibilityFrames: 0, 
             lastCrashedBuilding: null, 
+            // Performance tracking
+            lastUpdateTime: 0,
+            // Speed progression tracking
+            userSpeedMultiplier: 1.0, 
+            isSpeedLocked: false, // If true, use userSpeedMultiplier. If false, auto-increase.
+            speedProgression: 0, // Used for auto-increase calculation
+            currentSpeedMultiplier: 1.0, // The current multiplier in effect (for UI and logic)
+            lastSpeedIncrease: 0,
+            // Building generation state
+            lastGapCenterY: 0,
         };
 
         // Game elements
@@ -578,6 +775,7 @@
         const startScreen = document.getElementById('startScreen');
         const gameOverScreen = document.getElementById('gameOverScreen');
         const pauseScreen = document.getElementById('pauseScreen');
+        const settingsScreen = document.getElementById('settingsScreen');
         const gameUI = document.getElementById('gameUI');
         const startButton = document.getElementById('startButton');
         const restartButton = document.getElementById('restartButton');
@@ -586,8 +784,12 @@
         const finalScoreDisplay = document.getElementById('finalScore');
         const highScoreDisplay = document.getElementById('highScore');
         const soundToggle = document.getElementById('soundToggle');
-        const musicToggle = document.getElementById('musicToggle');
         const pauseButton = document.getElementById('pauseButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const closeSettingsButton = document.getElementById('closeSettingsButton');
+        const speedSlider = document.getElementById('speedSlider');
+        const speedValueDisplay = document.getElementById('speedValueDisplay');
+        const toggleAutoSpeedButton = document.getElementById('toggleAutoSpeedButton');
 
         const diamondDisplay = document.getElementById('currentDiamonds');
         const finalDiamondsDisplay = document.getElementById('finalDiamondsDisplay');
@@ -598,8 +800,10 @@
         let airplane = {
             x: 100,
             y: 0,
+            previousY: 0,
             velocity: 0,
             rotation: 0,
+            previousRotation: 0,
             width: 50,
             height: 40,
             flapAnimation: 0,
@@ -608,7 +812,6 @@
 
         let buildings = [];
         
-        // OPTIMIZED: Powerup UI variables
         let powerupDisplaySlots = [];
         const MAX_POWERUP_DISPLAY_SLOTS = 3;
 
@@ -630,15 +833,16 @@
             return `rgb(${rgb.r | 0},${rgb.g | 0},${rgb.b | 0})`;
         }
 
+        // New: Modern Color Palette for Sky Gradients
         const COLORS = {
-            NIGHT_SKY_1: hexToRgb("#000030"),
-            NIGHT_SKY_2: hexToRgb("#203050"),
-            DAWN_SKY_1: hexToRgb("#2c3e50"),
-            DAWN_SKY_2: hexToRgb("#34495e"),
-            DAY_SKY_1: hexToRgb("#87CEEB"),
-            DAY_SKY_2: hexToRgb("#ADD8E6"),
-            DUSK_SKY_1: hexToRgb("#e74c3c"),
-            DUSK_SKY_2: hexToRgb("#f39c12"),
+            NIGHT_SKY_1: hexToRgb("#020111"),
+            NIGHT_SKY_2: hexToRgb("#201E43"),
+            DAWN_SKY_1: hexToRgb("#2C254A"),
+            DAWN_SKY_2: hexToRgb("#544A8C"),
+            DAY_SKY_1: hexToRgb("#56CCF2"),
+            DAY_SKY_2: hexToRgb("#2F80ED"),
+            DUSK_SKY_1: hexToRgb("#FF8C42"),
+            DUSK_SKY_2: hexToRgb("#FF2975"),
             STAR_COLOR: { r: 255, g: 255, b: 230 }
         };
 
@@ -661,39 +865,266 @@
         }
 
 
-        function createMockAudio() {
-            return {
-                play: function() { return Promise.resolve(); },
-                pause: function() {},
-                load: function() {},
-                loop: false,
-                volume: 1,
-                currentTime: 0,
-            };
+        // Audio context for generating sounds
+        let audioContext = null;
+        let audioEnabled = false;
+
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioEnabled = true;
+            } catch (e) {
+                console.log('Audio not supported');
+                audioEnabled = false;
+            }
+        }
+
+        function createTone(frequency, duration, type = 'sine', volume = 0.3) {
+            if (!audioEnabled || !audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(volume, audioContext.currentTime + 0.01);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function createFlapSound() {
+            if (!gameState.soundEnabled || !audioEnabled) return;
+            createTone(600, 0.08, 'sine', 0.15);
+            setTimeout(() => createTone(400, 0.06, 'sine', 0.1), 50);
+        }
+
+        function createCollisionSound() {
+            if (!gameState.soundEnabled || !audioEnabled) return;
+            createTone(150, 0.4, 'sawtooth', 0.5);
+            setTimeout(() => createTone(100, 0.3, 'square', 0.4), 50);
+            setTimeout(() => createTone(80, 0.5, 'triangle', 0.3), 100);
+        }
+
+        function createScoreSound() {
+            if (!gameState.soundEnabled || !audioEnabled) return;
+            createTone(800, 0.1, 'sine', 0.2);
+            setTimeout(() => createTone(1000, 0.1, 'sine', 0.2), 80);
+            setTimeout(() => createTone(1200, 0.15, 'sine', 0.2), 160);
+        }
+
+        function createPowerupSound() {
+            if (!gameState.soundEnabled || !audioEnabled) return;
+            createTone(800, 0.1, 'square', 0.25);
+            setTimeout(() => createTone(1000, 0.1, 'square', 0.25), 50);
+            setTimeout(() => createTone(1200, 0.1, 'square', 0.25), 100);
+            setTimeout(() => createTone(600, 0.2, 'sine', 0.2), 150);
+        }
+
+        function createGhostPhaseSound() {
+            if (!gameState.soundEnabled || !audioEnabled) return;
+            createTone(300, 0.3, 'triangle', 0.3);
+            setTimeout(() => createTone(400, 0.2, 'sine', 0.2), 100);
+            setTimeout(() => createTone(500, 0.3, 'triangle', 0.25), 200);
+        }
+
+        function createPowerupWarningSound() {
+            if (!gameState.soundEnabled || !audioEnabled) return;
+            createTone(400, 0.15, 'square', 0.3);
+            setTimeout(() => createTone(350, 0.15, 'square', 0.3), 200);
+            setTimeout(() => createTone(300, 0.2, 'square', 0.3), 400);
+        }
+
+        function createContinueSound() {
+            if (!gameState.soundEnabled || !audioEnabled) return;
+            createTone(523, 0.2, 'sine', 0.3);
+            setTimeout(() => createTone(659, 0.2, 'sine', 0.3), 150);
+            setTimeout(() => createTone(784, 0.3, 'sine', 0.3), 300);
+            setTimeout(() => createTone(1047, 0.4, 'sine', 0.3), 450);
+        }
+
+        function createDiamondEarnSound() {
+            if (!gameState.soundEnabled || !audioEnabled) return;
+            createTone(1000, 0.08, 'sine', 0.25);
+            setTimeout(() => createTone(1200, 0.08, 'sine', 0.25), 60);
+            setTimeout(() => createTone(1400, 0.08, 'sine', 0.25), 120);
+            setTimeout(() => createTone(1600, 0.08, 'sine', 0.25), 180);
+            setTimeout(() => createTone(1800, 0.15, 'sine', 0.25), 240);
+        }
+
+        function enableAudio() {
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
         }
 
         const sounds = {
-            flap: createMockAudio(),
-            collision: createMockAudio(),
-            score: createMockAudio(),
-            powerup: createMockAudio(),
-            ghostPhase: createMockAudio(),
-            powerupWarning: createMockAudio(),
-            continueSound: createMockAudio(), 
-            diamondEarn: createMockAudio(), 
+            flap: { play: createFlapSound },
+            collision: { play: createCollisionSound },
+            score: { play: createScoreSound },
+            powerup: { play: createPowerupSound },
+            ghostPhase: { play: createGhostPhaseSound },
+            powerupWarning: { play: createPowerupWarningSound },
+            continueSound: { play: createContinueSound },
+            diamondEarn: { play: createDiamondEarnSound }
         };
-        const backgroundMusic = createMockAudio();
-        backgroundMusic.loop = true;
-        backgroundMusic.volume = 0.25;
-        Object.values(sounds).forEach(sound => sound.volume = 0.4);
 
+        function detectDevicePerformance() {
+            const cores = navigator.hardwareConcurrency || 2;
+            const memory = navigator.deviceMemory || 4;
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const pixelRatio = window.devicePixelRatio || 1;
+            const screenArea = window.screen.width * window.screen.height;
+            let performanceScore = cores * 0.3 + memory * 0.2;
+            if (!isMobile) performanceScore += 0.5;
+            if (pixelRatio <= 1.5) performanceScore += 0.3;
+            if (screenArea < 1000000) performanceScore += 0.2;
+            
+            if (performanceScore < 2.5) {
+                devicePerformance = 'low';
+                targetFPS = 30;
+            } else if (performanceScore < 4.0) {
+                devicePerformance = 'mid';
+                targetFPS = 45;
+            } else {
+                devicePerformance = 'high';
+                targetFPS = 60;
+            }
+            console.log(`Device Performance: ${devicePerformance} (Score: ${performanceScore.toFixed(2)})`);
+        }
+
+        function optimizeForDevice() {
+            switch (devicePerformance) {
+                case 'low':
+                    PARTICLE_COUNT = 5;
+                    BUILDING_GAP_BASE = 140;
+                    initialBaseSpeed = 2.2;
+                    SPEED_INCREASE_RATE = 0.015;
+                    GRAVITY = 0.4;
+                    FLAP_FORCE = -7;
+                    break;
+                case 'mid':
+                    PARTICLE_COUNT = 8;
+                    BUILDING_GAP_BASE = 150;
+                    initialBaseSpeed = 2.5;
+                    SPEED_INCREASE_RATE = 0.018;
+                    GRAVITY = 0.45;
+                    FLAP_FORCE = -7.5;
+                    break;
+                case 'high':
+                default:
+                    PARTICLE_COUNT = 10;
+                    BUILDING_GAP_BASE = 160;
+                    initialBaseSpeed = 2.8;
+                    SPEED_INCREASE_RATE = 0.02;
+                    GRAVITY = 0.5;
+                    FLAP_FORCE = -8;
+                    break;
+            }
+        }
+
+        function updateGameSpeed() {
+            if (!gameState.isPlaying || gameState.isPaused || gameState.isContinuing) return;
+
+            if (gameState.isSpeedLocked) {
+                // CONSTANT SPEED MODE
+                SCROLL_SPEED = initialBaseSpeed * gameState.userSpeedMultiplier;
+                gameState.currentSpeedMultiplier = gameState.userSpeedMultiplier;
+            } else {
+                // AUTO-INCREASE MODE
+                gameState.speedProgression += SPEED_INCREASE_RATE;
+                let progressionMultiplier = 1.0 + (gameState.speedProgression * 0.01);
+                gameState.currentSpeedMultiplier = Math.min(progressionMultiplier, MAX_AUTO_SCROLL_MULTIPLIER);
+                SCROLL_SPEED = initialBaseSpeed * gameState.currentSpeedMultiplier;
+
+                // Visual/Audio cues for speed increase in auto mode
+                if (gameState.frameCount - gameState.lastSpeedIncrease > SPEED_INCREASE_INTERVAL) {
+                    gameState.lastSpeedIncrease = gameState.frameCount;
+                    if (gameState.soundEnabled) {
+                        createTone(800, 0.1, 'sine', 0.1);
+                        setTimeout(() => createTone(1000, 0.1, 'sine', 0.1), 100);
+                    }
+                    createSpeedLines();
+                }
+            }
+            
+            // Update the UI display for speed
+            const speedDisplay = document.getElementById('currentSpeed');
+            if (speedDisplay) {
+                speedDisplay.textContent = gameState.currentSpeedMultiplier.toFixed(1) + 'x';
+                 // New: Updated speed colors
+                if (gameState.currentSpeedMultiplier >= 2.0) {
+                    speedDisplay.style.color = '#ff4757'; // Red
+                } else if (gameState.currentSpeedMultiplier >= 1.5) {
+                    speedDisplay.style.color = '#ffa502'; // Orange
+                } else {
+                    speedDisplay.style.color = '#00F5D4'; // Cyan
+                }
+            }
+        }
+
+        function createSpeedLines() {
+            for (let i = 0; i < 3; i++) {
+                let particle;
+                if (gameState.inactiveParticles.length > 0) {
+                    particle = gameState.inactiveParticles.pop();
+                } else {
+                    particle = {};
+                }
+                particle.x = canvas.width + Math.random() * 100;
+                particle.y = Math.random() * canvas.height;
+                particle.vx = -SCROLL_SPEED * 2 - Math.random() * 3;
+                particle.vy = 0;
+                particle.size = Math.random() * 2 + 1;
+                particle.color = 'rgba(0, 245, 212, 0.6)'; // New: Cyan speed lines
+                particle.life = 0.8 + Math.random() * 0.4;
+                particle.isSpeedLine = true;
+                gameState.particles.push(particle);
+            }
+        }
+
+        function updatePerformanceMonitor(currentTime, elapsed) {
+            const deltaTime = elapsed;
+            lastFrameTime = currentTime;
+            
+            if (deltaTime > 0) {
+                const currentFPS = 1000 / deltaTime;
+                fpsHistory.push(currentFPS);
+                if (fpsHistory.length > 60) fpsHistory.shift();
+                performanceMonitor.fps = fpsHistory.reduce((a, b) => a + b, 0) / fpsHistory.length;
+                performanceMonitor.frameTime = deltaTime;
+            }
+            
+            performanceMonitor.particleCount = gameState.particles.length + gameState.trailParticles.length;
+            performanceMonitor.buildingCount = buildings.length;
+            performanceMonitor.powerupCount = gameState.powerups.length;
+            
+            const perfMonitor = document.getElementById('performanceMonitor');
+            if (perfMonitor && perfMonitor.style.display !== 'none') {
+                document.getElementById('fpsDisplay').textContent = Math.round(performanceMonitor.fps);
+                document.getElementById('deviceDisplay').textContent = devicePerformance;
+                document.getElementById('particleDisplay').textContent = performanceMonitor.particleCount;
+                document.getElementById('buildingDisplay').textContent = performanceMonitor.buildingCount;
+            }
+        }
 
         function init() {
+            detectDevicePerformance();
+            optimizeForDevice();
+            loadSettings();
+            
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             loadGameData();
 
-            initPowerupUIDisplay(); // OPTIMIZED: Initialize powerup UI slots
+            initPowerupUIDisplay();
+            initAudio();
 
             startButton.addEventListener('click', startGame);
             restartButton.addEventListener('click', startGame); 
@@ -703,19 +1134,31 @@
             resumeButton.addEventListener('click', togglePause);
             pauseButton.addEventListener('click', togglePause);
             soundToggle.addEventListener('click', toggleSound);
-            musicToggle.addEventListener('click', toggleMusic);
+
+            settingsButton.addEventListener('click', openSettings);
+            closeSettingsButton.addEventListener('click', closeSettings);
+            speedSlider.addEventListener('input', handleSpeedChange);
+            toggleAutoSpeedButton.addEventListener('click', toggleAutoSpeed);
 
             document.addEventListener('keydown', handleKeyDown);
             canvas.addEventListener('click', handleClick);
             canvas.addEventListener('touchstart', handleTouch, { passive: false });
 
+            const enableAudioOnInteraction = () => {
+                enableAudio();
+                document.removeEventListener('click', enableAudioOnInteraction);
+                document.removeEventListener('keydown', enableAudioOnInteraction);
+                document.removeEventListener('touchstart', enableAudioOnInteraction);
+            };
+            document.addEventListener('click', enableAudioOnInteraction);
+            document.addEventListener('keydown', enableAudioOnInteraction);
+            document.addEventListener('touchstart', enableAudioOnInteraction);
+
             updateSoundButtonIcon();
-            updateMusicButtonIcon();
             updatePauseButtonIcon();
             updateDiamondDisplay(); 
 
-            Object.values(sounds).forEach(sound => sound.load());
-            backgroundMusic.load();
+            previousTime = performance.now();
             requestAnimationFrame(gameLoop);
         }
 
@@ -725,17 +1168,17 @@
             canvas.height = container.offsetHeight;
             if (airplane && (gameState.isWaitingForFirstFlap || gameState.isContinuing)) {
                  airplane.y = canvas.height / 2;
+                 airplane.previousY = airplane.y;
             } else if (airplane) {
                  airplane.y = Math.max(airplane.height/2, Math.min(canvas.height - airplane.height/2, airplane.y));
+                 airplane.previousY = airplane.y;
             }
             gameState.stars = [];
         }
 
         function loadGameData() {
             const storedHighScore = localStorage.getItem('paperAirplaneHighScoreDeluxeOpt');
-            if (storedHighScore) {
-                gameState.highScore = parseInt(storedHighScore, 10);
-            }
+            if (storedHighScore) gameState.highScore = parseInt(storedHighScore, 10);
             const storedDiamonds = localStorage.getItem('paperAirplaneDiamondsDeluxeOpt');
             if (storedDiamonds !== null) { 
                 gameState.diamonds = parseInt(storedDiamonds, 10);
@@ -751,6 +1194,56 @@
             localStorage.setItem('paperAirplaneDiamondsDeluxeOpt', gameState.diamonds.toString());
         }
         
+        function loadSettings() {
+            const storedSpeed = localStorage.getItem('paperAirplaneSpeedMultiplier');
+            if (storedSpeed) {
+                gameState.userSpeedMultiplier = parseFloat(storedSpeed);
+                speedSlider.value = gameState.userSpeedMultiplier;
+            } else {
+                gameState.userSpeedMultiplier = 1.0;
+            }
+            const storedSpeedLock = localStorage.getItem('paperAirplaneSpeedLock');
+            gameState.isSpeedLocked = storedSpeedLock === 'true';
+            updateSpeedControlsUI();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('paperAirplaneSpeedMultiplier', gameState.userSpeedMultiplier.toString());
+            localStorage.setItem('paperAirplaneSpeedLock', gameState.isSpeedLocked.toString());
+        }
+
+        function handleSpeedChange(e) {
+            const newSpeed = parseFloat(e.target.value);
+            gameState.userSpeedMultiplier = newSpeed;
+            if (!gameState.isSpeedLocked) {
+                gameState.isSpeedLocked = true; // Moving the slider locks the speed
+            }
+            updateSpeedControlsUI();
+            saveSettings();
+        }
+        
+        function toggleAutoSpeed() {
+            gameState.isSpeedLocked = !gameState.isSpeedLocked;
+            updateSpeedControlsUI();
+            saveSettings();
+        }
+        
+        function updateSpeedControlsUI() {
+            if (gameState.isSpeedLocked) {
+                speedSlider.disabled = false;
+                toggleAutoSpeedButton.textContent = 'Switch to Auto Speed';
+                toggleAutoSpeedButton.style.background = 'linear-gradient(45deg, #FF2975, #FF8C42)'; // New: Red/orange gradient for locked state
+                speedValueDisplay.textContent = `${gameState.userSpeedMultiplier.toFixed(1)}x`;
+                speedValueDisplay.style.color = '#00F5D4';
+            } else {
+                speedSlider.disabled = true;
+                toggleAutoSpeedButton.textContent = 'Auto Speed Enabled';
+                toggleAutoSpeedButton.style.background = 'linear-gradient(45deg, #00F5D4, #00A8FF)'; // New: Cyan/blue gradient for auto
+                speedValueDisplay.textContent = 'Auto';
+                speedValueDisplay.style.color = '#FFD700';
+            }
+        }
+
         function updateDiamondDisplay() {
             if (diamondDisplay) diamondDisplay.textContent = gameState.diamonds;
             if (finalDiamondsDisplay) finalDiamondsDisplay.textContent = gameState.diamonds;
@@ -759,23 +1252,52 @@
 
 
         let lastPowerupSpawnAttemptTime = 0;
-        const powerupSpawnCooldown = 800; // ms
+        const powerupSpawnCooldown = 800;
         let scoreNeedsDOMUpdate = false; 
 
-        function gameLoop(timestamp) {
-            if (!gameState.isPaused && (gameState.isPlaying || gameState.isContinuing)) {
-                update(timestamp);
+        const MS_PER_UPDATE = 1000 / 60;
+        let previousTime = 0;
+        let lag = 0.0;
+
+        function gameLoop(currentTime) {
+            if (previousTime === 0) {
+                previousTime = currentTime;
             }
-            render();
+            const elapsed = currentTime - previousTime;
+            previousTime = currentTime;
+            lag += elapsed;
+
+            updatePerformanceMonitor(currentTime, elapsed);
+            
+            while (lag >= MS_PER_UPDATE) {
+                if (!gameState.isPaused) {
+                     update(performance.now());
+                }
+                lag -= MS_PER_UPDATE;
+            }
+            
+            render(lag / MS_PER_UPDATE);
+            
             requestAnimationFrame(gameLoop);
         }
 
         function update(timestamp) {
+            if (!gameState.isPlaying && !gameState.isContinuing) return;
+
+            airplane.previousY = airplane.y;
+            airplane.previousRotation = airplane.rotation;
+            buildings.forEach(b => b.previousX = b.x);
+            gameState.powerups.forEach(p => { 
+                p.previousX = p.x; 
+                p.previousY = p.y;
+            });
+
             if (gameState.isPlaying && !gameState.isContinuing) { 
                 gameState.dayNightCycle += 0.0005;
                 if (gameState.dayNightCycle > Math.PI * 2) {
                     gameState.dayNightCycle = 0;
                 }
+                updateGameSpeed();
             }
 
             if (gameState.isWaitingForFirstFlap) {
@@ -803,7 +1325,7 @@
                         gameState.isPlaying = true; 
                         gameState.isPaused = false;
                         gameUI.classList.remove('hidden');
-                         if (gameState.soundEnabled && sounds.continueSound) sounds.continueSound.play().catch(e=>{});
+                         if (gameState.soundEnabled && sounds.continueSound) sounds.continueSound.play();
                     }
                 }
                 return; 
@@ -839,7 +1361,7 @@
                     gameState.score += 10;
                     scoreNeedsDOMUpdate = true; 
                     building.scored = true;
-                    if (gameState.soundEnabled) sounds.score.play().catch(e => {});
+                    if (gameState.soundEnabled) sounds.score.play();
 
                     if (gameState.score > 0 && gameState.score % 100 === 0) {
                         gameState.difficulty = Math.min(gameState.difficulty + 0.05, 2.0);
@@ -875,7 +1397,7 @@
                     deactivatePowerup(type);
                 }
             }
-            updatePowerupDisplayUI(); // OPTIMIZED: Now uses pre-created slots
+            updatePowerupDisplayUI();
 
             for (let i = gameState.powerups.length - 1; i >= 0; i--) {
                 const powerup = gameState.powerups[i];
@@ -926,8 +1448,8 @@
             }
             gameState.particles = activeParticles;
 
-            // OPTIMIZED: Reduced trail particle emission frequency
-            if (gameState.frameCount % 8 === 0) { // Was % 5
+            const trailEmissionRate = devicePerformance === 'low' ? 12 : devicePerformance === 'mid' ? 10 : 8;
+            if (gameState.frameCount % trailEmissionRate === 0) {
                 const planeLength = airplane.width;
                 const trailEmitterOffset = -planeLength / 2 * 0.8;
                 const rotatedOffsetX = Math.cos(airplane.rotation * Math.PI / 180) * trailEmitterOffset;
@@ -967,11 +1489,19 @@
             gameState.trailParticles = activeTrailParticles;
         }
 
-        function render() {
+        function render(interpolation) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             drawBackground();
-            buildings.forEach(drawBuilding);
-            gameState.powerups.forEach(drawPowerup);
+            
+            const visibleBuildings = buildings.filter(building => 
+                building.x + BUILDING_WIDTH > -50 && building.x < canvas.width + 50
+            );
+            visibleBuildings.forEach(building => drawBuilding(building, interpolation));
+            
+            const visiblePowerups = gameState.powerups.filter(powerup => 
+                powerup.x + powerup.width > -50 && powerup.x < canvas.width + 50
+            );
+            visiblePowerups.forEach(powerup => drawPowerup(powerup, interpolation));
 
             if (!gameState.isWaitingForFirstFlap && !gameState.isContinuing) { 
                 drawParticles(gameState.trailParticles);
@@ -986,18 +1516,18 @@
             
             ctx.save();
             ctx.globalAlpha = planeAlpha;
-            drawAirplane(); 
+            drawAirplane(interpolation); 
             ctx.restore();
-
 
             if (gameState.shieldActive) { 
                 ctx.save();
-                ctx.strokeStyle = 'rgba(65, 105, 225, 0.7)';
-                ctx.fillStyle = 'rgba(65, 105, 225, 0.15)';
+                ctx.strokeStyle = 'rgba(0, 123, 255, 0.8)'; // New: Shield Color
+                ctx.fillStyle = 'rgba(0, 123, 255, 0.2)'; // New: Shield Fill
                 ctx.lineWidth = 3;
                 ctx.beginPath();
                 const shieldRadius = (airplane.width + airplane.height) / 2 * 0.55;
-                ctx.arc((airplane.x + airplane.width / 2) | 0, airplane.y | 0, shieldRadius | 0, 0, Math.PI * 2);
+                const interpolatedY = airplane.previousY + (airplane.y - airplane.previousY) * interpolation;
+                ctx.arc((airplane.x + airplane.width / 2) | 0, interpolatedY | 0, shieldRadius | 0, 0, Math.PI * 2);
                 ctx.stroke();
                 ctx.fill();
                 ctx.restore();
@@ -1005,6 +1535,20 @@
             
             if (!gameState.isWaitingForFirstFlap && !gameState.isContinuing) {
                 drawParticles(gameState.particles);
+            }
+
+            if (gameState.isWaitingForFirstFlap) {
+                ctx.save();
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+                ctx.font = 'bold 24px Poppins';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+                ctx.shadowBlur = 5;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+                ctx.fillText('Tap to Start', canvas.width / 2, canvas.height / 2 + 70);
+                ctx.restore();
             }
         }
 
@@ -1037,35 +1581,37 @@
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            const celestialRadius = (Math.min(canvas.width, canvas.height) * 0.05) | 0;
-            const celestialPathRadius = (Math.min(canvas.width, canvas.height) * 0.30) | 0;
-            const celestialX = (canvas.width / 2 + celestialPathRadius * Math.cos(gameState.dayNightCycle - Math.PI / 2)) | 0;
-            const celestialY = (canvas.height * 0.55 - celestialPathRadius * Math.sin(gameState.dayNightCycle - Math.PI / 2)) | 0;
-            const sunOpacity = Math.max(0, Math.sin(gameState.dayNightCycle));
+            if (devicePerformance !== 'low') {
+                const celestialRadius = (Math.min(canvas.width, canvas.height) * 0.05) | 0;
+                const celestialPathRadius = (Math.min(canvas.width, canvas.height) * 0.30) | 0;
+                const celestialX = (canvas.width / 2 + celestialPathRadius * Math.cos(gameState.dayNightCycle - Math.PI / 2)) | 0;
+                const celestialY = (canvas.height * 0.55 - celestialPathRadius * Math.sin(gameState.dayNightCycle - Math.PI / 2)) | 0;
+                const sunOpacity = Math.max(0, Math.sin(gameState.dayNightCycle));
 
-            if (sunOpacity > 0.05) {
-                const sunBaseColor = { r: 255, g: 223, b: 100 };
-                const sunGlowRadius = celestialRadius * 2.5;
+                if (sunOpacity > 0.05) {
+                    const sunBaseColor = { r: 255, g: 223, b: 100 };
+                    const sunGlowRadius = celestialRadius * 2.5;
 
-                const sunRadialGradient = ctx.createRadialGradient(celestialX, celestialY, celestialRadius * 0.5, celestialX, celestialY, sunGlowRadius);
-                sunRadialGradient.addColorStop(0, rgbToCssString(sunBaseColor, sunOpacity * 0.45));
-                sunRadialGradient.addColorStop(1, rgbToCssString(sunBaseColor, 0));
+                    const sunRadialGradient = ctx.createRadialGradient(celestialX, celestialY, celestialRadius * 0.5, celestialX, celestialY, sunGlowRadius);
+                    sunRadialGradient.addColorStop(0, rgbToCssString(sunBaseColor, sunOpacity * 0.45));
+                    sunRadialGradient.addColorStop(1, rgbToCssString(sunBaseColor, 0));
 
-                ctx.fillStyle = sunRadialGradient;
-                ctx.fillRect((celestialX - sunGlowRadius) | 0, (celestialY - sunGlowRadius) | 0, (sunGlowRadius * 2) | 0, (sunGlowRadius * 2) | 0);
+                    ctx.fillStyle = sunRadialGradient;
+                    ctx.fillRect((celestialX - sunGlowRadius) | 0, (celestialY - sunGlowRadius) | 0, (sunGlowRadius * 2) | 0, (sunGlowRadius * 2) | 0);
 
-                ctx.beginPath();
-                ctx.arc(celestialX, celestialY, celestialRadius, 0, Math.PI * 2);
-                ctx.fillStyle = rgbToCssString(sunBaseColor, sunOpacity * 0.9);
-                ctx.fill();
+                    ctx.beginPath();
+                    ctx.arc(celestialX, celestialY, celestialRadius, 0, Math.PI * 2);
+                    ctx.fillStyle = rgbToCssString(sunBaseColor, sunOpacity * 0.9);
+                    ctx.fill();
+                    }
             }
 
             const isDarkEnoughForStars = (dayNightProgress < 0.25 || dayNightProgress > 0.75);
             if (isDarkEnoughForStars) {
                 if (!gameState.stars || gameState.stars.length === 0 || gameState.stars[0].canvasWidth !== canvas.width) {
                     gameState.stars = [];
-                    // OPTIMIZED: Reduced star count
-                    for (let i = 0; i < 60; i++) { // Was 80
+                    const starCount = devicePerformance === 'low' ? 30 : devicePerformance === 'mid' ? 45 : 60;
+                    for (let i = 0; i < starCount; i++) {
                         gameState.stars.push({
                             x: Math.random() * canvas.width,
                             y: Math.random() * canvas.height * 0.75,
@@ -1076,48 +1622,54 @@
                         });
                     }
                 }
-                let overallStarAlphaMultiplier = 0;
-                if (dayNightProgress < 0.25) { overallStarAlphaMultiplier = 1 - (dayNightProgress / 0.25); }
-                else if (dayNightProgress > 0.75) { overallStarAlphaMultiplier = (dayNightProgress - 0.75) / 0.25; }
-                overallStarAlphaMultiplier = Math.min(1, Math.max(0, overallStarAlphaMultiplier * 1.1));
+                
+                if (devicePerformance !== 'low') {
+                    let overallStarAlphaMultiplier = 0;
+                    if (dayNightProgress < 0.25) { overallStarAlphaMultiplier = 1 - (dayNightProgress / 0.25); }
+                    else if (dayNightProgress > 0.75) { overallStarAlphaMultiplier = (dayNightProgress - 0.75) / 0.25; }
+                    overallStarAlphaMultiplier = Math.min(1, Math.max(0, overallStarAlphaMultiplier * 1.1));
 
-                gameState.stars.forEach(star => {
-                    const twinkleFactor = 0.65 + Math.sin(gameState.frameCount * 0.025 + star.seed) * 0.35;
-                    ctx.fillStyle = rgbToCssString(COLORS.STAR_COLOR, star.alpha * overallStarAlphaMultiplier * twinkleFactor);
-                    ctx.beginPath();
-                    ctx.arc(star.x | 0, star.y | 0, star.radius | 0, 0, Math.PI * 2);
-                    ctx.fill();
-                });
+                    gameState.stars.forEach(star => {
+                        const twinkleFactor = 0.65 + Math.sin(gameState.frameCount * 0.025 + star.seed) * 0.35;
+                        ctx.fillStyle = rgbToCssString(COLORS.STAR_COLOR, star.alpha * overallStarAlphaMultiplier * twinkleFactor);
+                        ctx.beginPath();
+                        ctx.arc(star.x | 0, star.y | 0, star.radius | 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                }
             } else if (gameState.stars.length > 0){
                 gameState.stars = [];
             }
         }
 
-        function drawBuilding(building) { 
-            const dayNightProgress = (Math.sin(gameState.dayNightCycle) + 1) / 2;
-            const buildingBrightness = 33 + 42 * dayNightProgress; 
-            const buildingColor = `hsl(${building.hue | 0}, ${building.saturation | 0}%, ${buildingBrightness | 0}%)`;
-            const shadowFaceColor = `hsl(${building.hue | 0}, ${building.saturation | 0}%, ${Math.max(0,buildingBrightness - 18) | 0}%)`; 
+        function drawBuilding(building, interpolation) { 
+            const prevX = Number.isFinite(building.previousX) ? building.previousX : building.x;
+            const interpolatedX = prevX + (building.x - prevX) * interpolation;
 
-            const gradient = ctx.createLinearGradient(building.x | 0, 0, (building.x + BUILDING_WIDTH) | 0, 0);
+            const dayNightProgress = (Math.sin(gameState.dayNightCycle) + 1) / 2;
+            const buildingBrightness = 15 + 25 * dayNightProgress; // New: Darker buildings
+            const buildingColor = `hsl(${building.hue | 0}, ${building.saturation | 0}%, ${buildingBrightness | 0}%)`;
+            const shadowFaceColor = `hsl(${building.hue | 0}, ${building.saturation | 0}%, ${Math.max(0,buildingBrightness - 10) | 0}%)`; 
+
+            const gradient = ctx.createLinearGradient(interpolatedX | 0, 0, (interpolatedX + BUILDING_WIDTH) | 0, 0);
             gradient.addColorStop(0.2, buildingColor);
             gradient.addColorStop(0.8, shadowFaceColor); 
             ctx.fillStyle = gradient;
 
             if (building.topHeight > 0) {
-                ctx.fillRect(building.x | 0, 0, BUILDING_WIDTH | 0, building.topHeight | 0);
-                drawWindows(building.x | 0, 0, BUILDING_WIDTH | 0, building.topHeight | 0, building.windowPattern);
+                ctx.fillRect(interpolatedX | 0, 0, BUILDING_WIDTH | 0, building.topHeight | 0);
+                drawWindows(interpolatedX | 0, 0, BUILDING_WIDTH | 0, building.topHeight | 0, building.windowPattern);
             }
 
             const bottomBuildingActualHeight = (canvas.height - building.bottomY);
             if (building.bottomY < canvas.height && bottomBuildingActualHeight > 0) {
-                ctx.fillRect(building.x | 0, building.bottomY | 0, BUILDING_WIDTH | 0, bottomBuildingActualHeight | 0);
-                drawWindows(building.x | 0, building.bottomY | 0, BUILDING_WIDTH | 0, bottomBuildingActualHeight | 0, building.windowPattern);
+                ctx.fillRect(interpolatedX | 0, building.bottomY | 0, BUILDING_WIDTH | 0, bottomBuildingActualHeight | 0);
+                drawWindows(interpolatedX | 0, building.bottomY | 0, BUILDING_WIDTH | 0, bottomBuildingActualHeight | 0, building.windowPattern);
             }
             
             ctx.fillStyle = 'rgba(0, 0, 0, 0.12)'; 
-            const bx = (building.x + BUILDING_WIDTH) | 0;
-            const bx_offset = (building.x + BUILDING_WIDTH + 2) | 0;
+            const bx = (interpolatedX + BUILDING_WIDTH) | 0;
+            const bx_offset = (interpolatedX + BUILDING_WIDTH + 2) | 0;
 
             if (building.topHeight > 0) {
                 const H_top = building.topHeight | 0;
@@ -1177,12 +1729,18 @@
             }
         }
 
-        function drawAirplane() { 
+        function drawAirplane(interpolation) { 
             ctx.save();
 
+            const prevY = Number.isFinite(airplane.previousY) ? airplane.previousY : airplane.y;
+            const prevRot = Number.isFinite(airplane.previousRotation) ? airplane.previousRotation : airplane.rotation;
+            
+            const interpolatedY = prevY + (airplane.y - prevY) * interpolation;
+            const interpolatedRotation = prevRot + (airplane.rotation - prevRot) * interpolation;
+
             const currentX = Number.isFinite(airplane.x) ? airplane.x : canvas.width / 2;
-            const currentY = Number.isFinite(airplane.y) ? airplane.y : canvas.height / 2;
-            const currentRotation = Number.isFinite(airplane.rotation) ? airplane.rotation : 0;
+            const currentY = Number.isFinite(interpolatedY) ? interpolatedY : canvas.height / 2;
+            const currentRotation = Number.isFinite(interpolatedRotation) ? interpolatedRotation : 0;
             
             const planeDrawX = Math.floor(currentX + airplane.width / 2);
             const planeDrawY = Math.floor(currentY);
@@ -1265,7 +1823,8 @@
             }
 
             let mobileGapMultiplier = 1.0;
-            if (canvas.width < MOBILE_WIDTH_THRESHOLD) {
+            const isMobile = canvas.width < MOBILE_WIDTH_THRESHOLD;
+            if (isMobile) {
                 mobileGapMultiplier = 1.25;
             }
 
@@ -1274,28 +1833,52 @@
             const difficultyModifier = Math.max(0.55, 1 - (gameState.difficulty - 1) * 0.28);
             let currentGapSize = (minGap + Math.random() * (maxGap - minGap)) * difficultyModifier;
 
-            const gapTopMargin = 60;
-            const gapBottomMargin = 80;
             const minGapHeight = 100 * mobileGapMultiplier;
             currentGapSize = Math.max(currentGapSize, minGapHeight);
 
-            let calculatedGapTop;
-            let minPlacableGapTop = gapTopMargin;
-            let maxPlacableGapTop = canvas.height - currentGapSize - gapBottomMargin;
+            const gapTopMargin = 60;
+            const gapBottomMargin = 80;
 
-            if (maxPlacableGapTop < minPlacableGapTop) {
-                calculatedGapTop = (canvas.height - currentGapSize) / 2;
+            // This new logic ensures smoother transitions between gap heights.
+            let maxVerticalDrift;
+            // On mobile, the gap shouldn't jump up and down as aggressively.
+            if (isMobile) {
+                maxVerticalDrift = canvas.height * 0.22; // Max 22% of screen height drift per building on mobile.
             } else {
-                const centerOfPlacementRange = minPlacableGapTop + (maxPlacableGapTop - minPlacableGapTop) / 2;
-                const spreadFactor = 0.7;
-                const randomOffset = (Math.random() - 0.5) * (maxPlacableGapTop - minPlacableGapTop) * spreadFactor;
-                calculatedGapTop = centerOfPlacementRange + randomOffset;
-                calculatedGapTop = Math.max(minPlacableGapTop, Math.min(calculatedGapTop, maxPlacableGapTop));
+                maxVerticalDrift = canvas.height * 0.30; // Max 30% on PC for more variety.
             }
+            
+            // Calculate the potential vertical range for the new gap's center based on the last one.
+            const minCenterY = gameState.lastGapCenterY - maxVerticalDrift;
+            const maxCenterY = gameState.lastGapCenterY + maxVerticalDrift;
+            
+            // Generate a new target center within that smoother, drifted range.
+            let targetCenterY = minCenterY + Math.random() * (maxCenterY - minCenterY);
+            
+            // Determine the absolute top/bottom boundaries for any gap.
+            const minPossibleGapTop = gapTopMargin;
+            const maxPossibleGapTop = canvas.height - currentGapSize - gapBottomMargin;
+
+            // Convert our desired targetCenterY into a gapTop position.
+            let calculatedGapTop = targetCenterY - currentGapSize / 2;
+
+            // Crucially, we must still clamp the new position to respect the screen margins.
+            // This prevents the gap from drifting off-screen.
+            calculatedGapTop = Math.max(minPossibleGapTop, Math.min(calculatedGapTop, maxPossibleGapTop));
+            
+            // Failsafe: If screen is too small for the calculated gap and margins, just center it.
+            if (maxPossibleGapTop < minPossibleGapTop) {
+                calculatedGapTop = (canvas.height - currentGapSize) / 2;
+            }
+            
+            // Update the state with the actual new gap's center for the next building to use.
+            const newGapCenterY = calculatedGapTop + currentGapSize / 2;
+            gameState.lastGapCenterY = newGapCenterY;
 
             const gapTop = calculatedGapTop;
 
             building.x = canvas.width;
+            building.previousX = canvas.width;
             building.topHeight = Math.max(0, gapTop);
             building.bottomY = Math.min(canvas.height, gapTop + currentGapSize);
 
@@ -1337,8 +1920,8 @@
                 }
             }
 
-            building.hue = 180 + Math.random() * 60;
-            building.saturation = 10 + Math.random()*15;
+            building.hue = 200 + Math.random() * 40; // New: Cooler building hues
+            building.saturation = 20 + Math.random()*15; // New: More saturated buildings
             building.scored = false;
             building.windowPattern = generateWindowPattern(30); 
 
@@ -1369,7 +1952,7 @@
                                 gameState.score += 10;
                                 scoreNeedsDOMUpdate = true;
                                 building.scored = true;
-                                if (gameState.soundEnabled) sounds.score.play().catch(e => {});
+                                if (gameState.soundEnabled) sounds.score.play();
                             }
                             return false; 
                         }
@@ -1377,7 +1960,7 @@
                         if (gameState.ghostActive) {
                             deactivatePowerup('ghost', false); 
                             createParticles(planeCenterX, planeCenterY, getPowerupColor('ghost'), 25);
-                            if (gameState.soundEnabled && sounds.ghostPhase) sounds.ghostPhase.play().catch(e=>{});
+                            if (gameState.soundEnabled && sounds.ghostPhase) sounds.ghostPhase.play();
 
                             if (!building.scored) { 
                                 gameState.score += 10;
@@ -1392,7 +1975,7 @@
                             if (gameState.activePowerups.shield) {
                                 deactivatePowerup('shield', false); 
                             }
-                            if (gameState.soundEnabled) sounds.collision.play().catch(e => {}); 
+                            if (gameState.soundEnabled) sounds.collision.play(); 
                             createParticles(airplane.x + airplane.width / 2, airplane.y, getPowerupColor('shield'), 20);
                             return false; 
                         }
@@ -1414,6 +1997,17 @@
                 e.preventDefault(); 
                 if (gameState.isPlaying || gameState.isContinuing) togglePause(); 
             }
+            if (e.code === 'F3') { 
+                e.preventDefault(); 
+                togglePerformanceMonitor(); 
+            }
+        }
+
+        function togglePerformanceMonitor() {
+            const perfMonitor = document.getElementById('performanceMonitor');
+            if (perfMonitor) {
+                perfMonitor.style.display = perfMonitor.style.display === 'none' ? 'block' : 'none';
+            }
         }
         function handleClick() { if (gameState.isPlaying && !gameState.isPaused && !gameState.isContinuing) flap(); }
         function handleTouch(e) { e.preventDefault(); if (gameState.isPlaying && !gameState.isPaused && !gameState.isContinuing) flap(); }
@@ -1427,8 +2021,7 @@
             airplane.isFlapping = true;
             airplane.flapAnimation = 0;
             if (gameState.soundEnabled) {
-                sounds.flap.currentTime = 0;
-                sounds.flap.play().catch(e => {});
+                sounds.flap.play();
             }
         }
 
@@ -1450,7 +2043,19 @@
             gameState.originalDifficultySpeed = null;
             gameState.dayNightCycle = Math.PI * 1.35; 
             gameState.lastCrashedBuilding = null;
+            gameState.lastGapCenterY = canvas.height / 2;
+            
+            gameState.speedProgression = 0;
+            gameState.lastSpeedIncrease = 0;
 
+            // Initialize speed based on the current settings
+            if (gameState.isSpeedLocked) {
+                SCROLL_SPEED = initialBaseSpeed * gameState.userSpeedMultiplier;
+                gameState.currentSpeedMultiplier = gameState.userSpeedMultiplier;
+            } else {
+                SCROLL_SPEED = initialBaseSpeed;
+                gameState.currentSpeedMultiplier = 1.0;
+            }
 
             gameState.inactiveParticles.length = 0;
             gameState.inactiveTrailParticles.length = 0;
@@ -1459,7 +2064,6 @@
 
             Object.keys(gameState.activePowerups).forEach(type => deactivatePowerup(type, false));
             gameState.activePowerups = {};
-            // OPTIMIZED: UI slots will be correctly handled by updatePowerupDisplayUI
 
             scoreDisplay.textContent = '0';
             finalScoreDisplay.textContent = '0'; 
@@ -1468,20 +2072,19 @@
             startScreen.classList.add('hidden');
             gameOverScreen.classList.add('hidden');
             pauseScreen.classList.add('hidden');
+            settingsScreen.classList.add('hidden');
             countdownDisplay.classList.add('hidden');
             gameUI.classList.remove('hidden');
 
             buildings = [];
             airplane.y = canvas.height / 2;
+            airplane.previousY = airplane.y;
             airplane.velocity = 0;
             airplane.rotation = 0;
+            airplane.previousRotation = 0;
             airplane.isFlapping = false;
             airplane.flapAnimation = 0;
 
-            if (gameState.musicEnabled) {
-                backgroundMusic.currentTime = 0;
-                backgroundMusic.play().catch(e => {});
-            }
             updatePauseButtonIcon();
 
             let initialSeparationFactor = 2.1;
@@ -1493,6 +2096,7 @@
                  const newBuilding = createBuilding();
                  if (newBuilding) { 
                     newBuilding.x = canvas.width + i * ((canvas.width / initialSeparationFactor) + (Math.random() * 60 - 30));
+                    newBuilding.previousX = newBuilding.x;
                  }
             }
         }
@@ -1501,7 +2105,7 @@
             gameState.isPlaying = false;
             gameState.isWaitingForFirstFlap = false;
             gameState.isContinuing = false;
-            if (gameState.soundEnabled) sounds.collision.play().catch(e => {});
+            if (gameState.soundEnabled) sounds.collision.play();
 
             if (gameState.score > gameState.highScore) {
                 gameState.highScore = gameState.score;
@@ -1515,7 +2119,6 @@
             gameOverScreen.classList.remove('hidden');
             gameUI.classList.add('hidden');
             countdownDisplay.classList.add('hidden');
-            if(backgroundMusic) backgroundMusic.pause();
 
             if (gameState.diamonds >= CONTINUE_DIAMOND_COST) {
                 continueButton.classList.remove('hidden');
@@ -1529,7 +2132,7 @@
 
             Object.keys(gameState.activePowerups).forEach(type => deactivatePowerup(type, false));
             gameState.activePowerups = {};
-            updatePowerupDisplayUI(); // Ensure UI is cleared
+            updatePowerupDisplayUI();
         }
 
         function handleContinueGame() { 
@@ -1555,10 +2158,15 @@
             scoreDisplay.textContent = gameState.score; 
 
             airplane.y = canvas.height / 2;
+            airplane.previousY = airplane.y;
             airplane.velocity = 0;
             airplane.rotation = 0;
+            airplane.previousRotation = 0;
             airplane.isFlapping = false;
             airplane.flapAnimation = 0;
+            
+            // Crucially, reset the gap generation logic to the center of the screen
+            gameState.lastGapCenterY = canvas.height / 2;
 
             gameState.continueInvincibilityFrames = CONTINUE_INVINCIBILITY_DURATION_FRAMES;
 
@@ -1591,6 +2199,7 @@
                 if (newBuilding) {
                     const minX = Math.max(canvas.width, airplane.x + clearZoneAfterPlane + Math.random() * 100);
                     newBuilding.x = minX;
+                    newBuilding.previousX = minX;
                     newBuilding.scored = false; 
                 }
             } else {
@@ -1599,10 +2208,6 @@
                 }
             }
 
-
-            if (gameState.musicEnabled) {
-                backgroundMusic.play().catch(e => {});
-            }
             updatePauseButtonIcon(); 
         }
 
@@ -1620,7 +2225,7 @@
                     gameState.diamonds += EARN_DIAMONDS_REWARD;
                     saveGameData();
                     updateDiamondDisplay();
-                    if (gameState.soundEnabled && sounds.diamondEarn) sounds.diamondEarn.play().catch(e => {});
+                    if (gameState.soundEnabled && sounds.diamondEarn) sounds.diamondEarn.play();
                     
                     earnDiamondsButton.disabled = false;
                     earnDiamondsButton.textContent = `Earn 💎 (Watch Ad)`;
@@ -1637,8 +2242,49 @@
             setTimeout(updateAdButtonText, 500); 
         }
 
+        function openSettings() {
+            if (gameState.isSettingsOpen) return;
+            if (!gameState.isPlaying && !gameState.isContinuing) return;
+
+            gameState.wasPausedBeforeSettings = gameState.isPaused;
+            gameState.isSettingsOpen = true;
+            settingsScreen.classList.remove('hidden');
+
+            if (!gameState.isPaused) {
+                gameState.isPaused = true;
+                gameState.pauseStartTime = performance.now();
+                pauseScreen.classList.add('hidden');
+                updatePauseButtonIcon();
+            }
+        }
+
+        function closeSettings() {
+            if (!gameState.isSettingsOpen) return;
+            
+            gameState.isSettingsOpen = false;
+            settingsScreen.classList.add('hidden');
+
+            if (!gameState.wasPausedBeforeSettings) {
+                gameState.isPaused = false;
+                const pauseDuration = performance.now() - gameState.pauseStartTime;
+                for (const type in gameState.activePowerups) {
+                    gameState.activePowerups[type].startTime += pauseDuration;
+                }
+                if (gameState.isContinuing) {
+                    gameState.continueNextTickTime += pauseDuration;
+                    countdownDisplay.classList.remove('hidden');
+                }
+                previousTime = performance.now();
+                lag = 0;
+            }
+            updatePauseButtonIcon();
+        }
 
         function togglePause() { 
+            if (gameState.isSettingsOpen) {
+                closeSettings();
+                return;
+            }
             if (!gameState.isPlaying && !gameState.isContinuing) return; 
             
             gameState.isPaused = !gameState.isPaused;
@@ -1646,7 +2292,6 @@
 
             if (gameState.isPaused) {
                 gameState.pauseStartTime = performance.now();
-                if (backgroundMusic) backgroundMusic.pause();
                 pauseScreen.classList.remove('hidden');
                 if (gameState.isContinuing) countdownDisplay.classList.add('hidden'); 
             } else {
@@ -1658,25 +2303,15 @@
                     gameState.continueNextTickTime += pauseDuration;
                     countdownDisplay.classList.remove('hidden'); 
                 }
-
-                if (gameState.musicEnabled) backgroundMusic.play().catch(e => {});
+                previousTime = performance.now();
+                lag = 0;
                 pauseScreen.classList.add('hidden');
             }
         }
 
         function updatePauseButtonIcon() { pauseButton.querySelector('.icon').textContent = gameState.isPaused ? '►' : '❚❚'; }
         function updateSoundButtonIcon() { soundToggle.querySelector('.icon').textContent = gameState.soundEnabled ? '🔊' : '🔇'; }
-        function updateMusicButtonIcon() { musicToggle.querySelector('.icon').textContent = gameState.musicEnabled ? '🎵' : '🎶';  }
         function toggleSound() { gameState.soundEnabled = !gameState.soundEnabled; updateSoundButtonIcon(); }
-        function toggleMusic() { 
-            gameState.musicEnabled = !gameState.musicEnabled;
-            updateMusicButtonIcon();
-            if (gameState.musicEnabled && (gameState.isPlaying || gameState.isContinuing) && !gameState.isPaused ) {
-                 backgroundMusic.play().catch(e => {});
-            } else {
-                 backgroundMusic.pause();
-            }
-        }
 
         const POWERUP_TYPES = ['speed', 'shield', 'magnet', 'ghost'];
         function createPowerup() { 
@@ -1690,7 +2325,9 @@
                 powerup = {};
             }
             powerup.x = canvas.width + 60;
+            powerup.previousX = powerup.x;
             powerup.y = Math.random() * (canvas.height - 250) + 125;
+            powerup.previousY = powerup.y;
             powerup.type = type;
             powerup.width = 28;
             powerup.height = 28;
@@ -1698,15 +2335,20 @@
             gameState.powerups.push(powerup);
         }
 
-        function drawPowerup(powerup) { 
+        function drawPowerup(powerup, interpolation) {
+            const prevX = Number.isFinite(powerup.previousX) ? powerup.previousX : powerup.x;
+            const prevY = Number.isFinite(powerup.previousY) ? powerup.previousY : powerup.y;
+            const interpolatedX = prevX + (powerup.x - prevX) * interpolation;
+            const interpolatedY = prevY + (powerup.y - prevY) * interpolation;
+
             ctx.save();
-            ctx.translate((powerup.x + powerup.width / 2) | 0, (powerup.y + powerup.height / 2) | 0);
+            ctx.translate((interpolatedX + powerup.width / 2) | 0, (interpolatedY + powerup.height / 2) | 0);
 
             const pulseBase = 8;
             const pulseRange = 4;
             const pulseAmount = Math.sin(Date.now() * 0.005) * pulseRange + (pulseBase + pulseRange / 2);
             
-            const shadowColorRgba = getPowerupColor(powerup.type).replace(/0.85\)$/, '0.2)'); 
+            const shadowColorRgba = getPowerupColor(powerup.type).replace(/0.9\)$/, '0.25)'); // Adjusted for new alpha
             ctx.fillStyle = shadowColorRgba;
             ctx.beginPath();
             ctx.arc(0, 0, (powerup.visualSize + pulseAmount * 0.25) | 0, 0, Math.PI * 2);
@@ -1733,7 +2375,11 @@
 
         function createParticles(x, y, color, count = PARTICLE_COUNT, initialVY = (Math.random() - 0.5) * 4.0) { 
             if (gameState.isWaitingForFirstFlap || gameState.isContinuing) return; 
-            for (let i = 0; i < count; i++) {
+            
+            const adaptiveCount = devicePerformance === 'low' ? Math.floor(count * 0.6) : 
+                                 devicePerformance === 'mid' ? Math.floor(count * 0.8) : count;
+            
+            for (let i = 0; i < adaptiveCount; i++) {
                 let particle;
                 if (gameState.inactiveParticles.length > 0) {
                     particle = gameState.inactiveParticles.pop();
@@ -1765,7 +2411,12 @@
                 const currentSize = Math.max(0, particle.size * alpha);
 
                 if (currentSize > 0.5) {
-                    ctx.fillRect((particle.x - currentSize / 2) | 0, (particle.y - currentSize / 2) | 0, currentSize | 0, currentSize | 0);
+                    if (particle.isSpeedLine) {
+                        const streakLength = currentSize * 3;
+                        ctx.fillRect((particle.x - streakLength / 2) | 0, (particle.y - currentSize / 2) | 0, streakLength | 0, currentSize | 0);
+                    } else {
+                        ctx.fillRect((particle.x - currentSize / 2) | 0, (particle.y - currentSize / 2) | 0, currentSize | 0, currentSize | 0);
+                    }
                 }
             });
             ctx.globalAlpha = 1;
@@ -1785,7 +2436,7 @@
         }
 
         function applyPowerup(powerup) { 
-            if (gameState.soundEnabled) sounds.powerup.play().catch(e => {});
+            if (gameState.soundEnabled) sounds.powerup.play();
 
             if (gameState.activePowerups[powerup.type]) {
                 deactivatePowerup(powerup.type, false);
@@ -1814,7 +2465,7 @@
 
         function deactivatePowerup(type, playSound = true) { 
             if (!gameState.activePowerups[type]) return;
-            if (playSound && gameState.soundEnabled && sounds.powerupWarning) sounds.powerupWarning.play().catch(e=>{});
+            if (playSound && gameState.soundEnabled && sounds.powerupWarning) sounds.powerupWarning.play();
 
             switch (type) {
                 case 'speed':
@@ -1828,19 +2479,17 @@
                 case 'ghost': gameState.ghostActive = false; break;
             }
             delete gameState.activePowerups[type];
-            // No direct DOM manipulation here; updatePowerupDisplayUI will handle hiding the slot.
         }
 
-        // OPTIMIZED: Function to initialize powerup display slots
         function initPowerupUIDisplay() {
             const displayContainer = document.getElementById('powerupDisplay');
-            displayContainer.innerHTML = ''; // Clear any previous content, e.g. from HMR or errors
+            displayContainer.innerHTML = ''; 
             powerupDisplaySlots = [];
 
             for (let i = 0; i < MAX_POWERUP_DISPLAY_SLOTS; i++) {
                 const puElement = document.createElement('div');
                 puElement.className = 'active-powerup-icon';
-                puElement.style.display = 'none'; // Initially hidden
+                puElement.style.display = 'none'; 
 
                 const iconText = document.createElement('span');
                 iconText.className = 'icon-char';
@@ -1862,7 +2511,6 @@
             }
         }
         
-        // OPTIMIZED: Updated function to manage powerup UI display using pre-created slots
         function updatePowerupDisplayUI() { 
             const now = performance.now();
             let currentSlotIndex = 0;
@@ -1884,7 +2532,7 @@
                 
                 slot.element.style.display = 'flex';
 
-                const bgColor = pu.color.replace(/0.85\)$/, '0.55)');
+                const bgColor = pu.color.replace(/0.9\)$/, '0.65)'); // Adjusted for new alpha
                 slot.element.style.backgroundColor = bgColor;
                 slot.element.style.borderColor = pu.color;
                 slot.iconSpan.textContent = pu.icon;
@@ -1892,7 +2540,7 @@
                 slot.progressBar.style.width = `${(remainingTime / pu.duration) * 100}%`;
 
                 if (remainingTime < 1800 && Math.floor(remainingTime / 180) % 2 === 0) {
-                    slot.progressBar.style.backgroundColor = 'red';
+                    slot.progressBar.style.backgroundColor = '#ff4757'; // Red warning
                 } else {
                     slot.progressBar.style.backgroundColor = 'rgba(255,255,255,0.75)';
                 }
@@ -1906,13 +2554,14 @@
         }
 
 
+        // New: Updated powerup colors
         function getPowerupColor(type) { 
             switch (type) {
-                case 'speed': return 'rgba(255, 215, 0, 0.85)';
-                case 'shield': return 'rgba(65, 105, 225, 0.85)';
-                case 'magnet': return 'rgba(255, 69, 0, 0.85)';
-                case 'ghost': return 'rgba(170, 170, 200, 0.85)';
-                default: return 'rgba(255, 255, 255, 0.85)';
+                case 'speed': return 'rgba(255, 215, 0, 0.9)'; // Gold
+                case 'shield': return 'rgba(0, 123, 255, 0.9)'; // Electric Blue
+                case 'magnet': return 'rgba(255, 0, 149, 0.9)'; // Magenta
+                case 'ghost': return 'rgba(189, 189, 219, 0.9)'; // Lavender/Cool Gray
+                default: return 'rgba(255, 255, 255, 0.9)';
             }
         }
 
